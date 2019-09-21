@@ -1,22 +1,20 @@
 package dataflow.abs;
 
-import heros.JoinLattice;
+/**
+ * Lattice used in the ZeroAnalysis.
+ */
+public enum ZeroLattice {
 
-public class ZeroLattice implements JoinLattice {
+  BOTTOM("bottom"), NOT_ZERO("not-zero"), ZERO("zero"), MAYBE_ZERO("maybe-zero");
 
-  public enum ZeroLatticeValues {
-    BOTTOM, NOT_ZERO, ZERO, MAYBE_ZERO
+  private String name;
+
+  @Override
+  public String toString() {
+    return this.name;
   }
 
-  public Object topElement() {
-    return ZeroLatticeValues.MAYBE_ZERO;
-  }
-
-  public Object bottomElement() {
-    return ZeroLatticeValues.BOTTOM;
-  }
-
-  public Object join(Object left, Object right) {
-    return null;
+  ZeroLattice(String name) {
+    this.name = name;
   }
 }
