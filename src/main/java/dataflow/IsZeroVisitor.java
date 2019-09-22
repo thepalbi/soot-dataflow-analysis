@@ -1,46 +1,33 @@
 package dataflow;
 
-import java.util.HashMap;
+import static org.slf4j.LoggerFactory.getLogger;
 
-import soot.IntegerType;
+import dataflow.abs.ValueVisitor;
+import dataflow.abs.ZeroLattice;
+import org.slf4j.Logger;
+import soot.Local;
 import soot.Unit;
-import soot.Value;
 import soot.jimple.DefinitionStmt;
 
 public class IsZeroVisitor {
 
-  public BooleanMap<Value> varaibleIsInteger = new BooleanMap<>();
+  private final Logger LOGGER = getLogger(IsZeroVisitor.class);
 
-  public void visitDefinition(DefinitionStmt definition) {
-    Value variable = definition.getLeftOp();
-    if (definition.getRightOp().getType() instanceof IntegerType) {
-      varaibleIsInteger.set(variable);
-    } else if (varaibleIsInteger.get(variable)) {
-      varaibleIsInteger.clear(variable);
-    }
+  private VariableToLatticeMap variables;
+
+  public IsZeroVisitor(VariableToLatticeMap variables) {
+    this.variables = variables;
   }
 
   public void visit(Unit unit) {
     if (unit instanceof DefinitionStmt) {
-      this.visitDefinition((DefinitionStmt) unit);
+      DefinitionStmt definition = (DefinitionStmt) unit;
+      visitDefinition((Local) definition.getLeftOp(), new ValueVisitor(variables).visit(definition.getRightOp()).done());
     }
-
   }
 
-  class BooleanMap<K> extends HashMap<K, Boolean> {
-
-    public void clear(K key) {
-      this.put(key, false);
-    }
-
-    public void set(K key) {
-      this.put(key, true);
-    }
-
-    @Override
-    public Boolean get(Object key) {
-      return this.getOrDefault(key, false);
-    }
+  private void visitDefinition(Local variable, ZeroLattice assignment) {
+    variables.put(variable.getName(), assignment);
   }
 
 }
