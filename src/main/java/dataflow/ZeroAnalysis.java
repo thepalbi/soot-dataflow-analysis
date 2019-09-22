@@ -6,6 +6,7 @@ import dataflow.abs.ZeroLattice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import soot.Unit;
+import soot.jimple.Stmt;
 import soot.toolkits.graph.DirectedGraph;
 import soot.toolkits.scalar.ForwardFlowAnalysis;
 
@@ -25,8 +26,8 @@ public class ZeroAnalysis extends ForwardFlowAnalysis<Unit, VariableToLatticeMap
   }
 
   protected void flowThrough(VariableToLatticeMap in, Unit unit, VariableToLatticeMap out) {
-    IsZeroVisitor currentVisitor = new IsZeroVisitor(in);
-    currentVisitor.visit(unit);
+    StmtVisitor currentVisitor = new StmtVisitor(in);
+    currentVisitor.visit((Stmt) unit);
 
     currentVisitor.resolvedValueIfAssignment.ifPresent(latticeValue -> resolvedForUnit.put(unit, latticeValue));
 

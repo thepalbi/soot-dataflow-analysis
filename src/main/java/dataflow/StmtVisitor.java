@@ -6,29 +6,29 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Optional;
 
-import dataflow.abs.ValueVisitor;
+import dataflow.abs.ZeroLatticeValueVisitor;
 import dataflow.abs.ZeroLattice;
 import org.slf4j.Logger;
 import soot.Local;
-import soot.Unit;
 import soot.jimple.DefinitionStmt;
+import soot.jimple.Stmt;
 
-public class IsZeroVisitor {
+public class StmtVisitor {
 
-  private final Logger LOGGER = getLogger(IsZeroVisitor.class);
+  private final Logger LOGGER = getLogger(StmtVisitor.class);
 
   private VariableToLatticeMap variables;
 
   public Optional<ZeroLattice> resolvedValueIfAssignment = empty();
 
-  public IsZeroVisitor(VariableToLatticeMap variables) {
+  public StmtVisitor(VariableToLatticeMap variables) {
     this.variables = variables;
   }
 
-  public void visit(Unit unit) {
-    if (unit instanceof DefinitionStmt) {
-      DefinitionStmt definition = (DefinitionStmt) unit;
-      visitDefinition((Local) definition.getLeftOp(), new ValueVisitor(variables).visit(definition.getRightOp()).done());
+  public void visit(Stmt stmt) {
+    if (stmt instanceof DefinitionStmt) {
+      DefinitionStmt definition = (DefinitionStmt) stmt;
+      visitDefinition((Local) definition.getLeftOp(), new ZeroLatticeValueVisitor(variables).visit(definition.getRightOp()).done());
     }
   }
 
