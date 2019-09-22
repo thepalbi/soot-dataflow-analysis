@@ -1,5 +1,8 @@
 package dataflow;
 
+import java.util.HashMap;
+
+import dataflow.abs.ZeroLattice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import soot.Unit;
@@ -13,6 +16,8 @@ public class ZeroAnalysis extends ForwardFlowAnalysis<Unit, VariableToLatticeMap
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeroAnalysis.class);
 
+  public HashMap<Unit, ZeroLattice> resolvedForUnit = new HashMap<>();
+
   public ZeroAnalysis(DirectedGraph<Unit> graph) {
     super(graph);
 
@@ -20,7 +25,10 @@ public class ZeroAnalysis extends ForwardFlowAnalysis<Unit, VariableToLatticeMap
   }
 
   protected void flowThrough(VariableToLatticeMap in, Unit unit, VariableToLatticeMap out) {
-    new IsZeroVisitor(in).visit(unit);
+    IsZeroVisitor currentVisitor = new IsZeroVisitor(in);
+    currentVisitor.visit(unit);
+
+    currentVisitor.resolvedValueIfAssignment.ifPresent(latticeValue -> resolvedForUnit.put(unit, latticeValue));
 
     out.putAll(in);
   }

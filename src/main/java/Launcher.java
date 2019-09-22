@@ -1,12 +1,12 @@
 import java.util.Map;
 
 import dataflow.ZeroAnalysis;
+import dataflow.abs.ZeroLattice;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.PackManager;
 import soot.Transform;
 import soot.Unit;
-import soot.jimple.DefinitionStmt;
 import soot.tagkit.StringTag;
 import soot.toolkits.graph.ExceptionalUnitGraph;
 
@@ -19,8 +19,9 @@ public class Launcher {
       protected void internalTransform(Body body, String phaseName, Map<String, String> options) {
         ZeroAnalysis results = new ZeroAnalysis(new ExceptionalUnitGraph(body));
         for (Unit unit : body.getUnits()) {
-          if (unit instanceof DefinitionStmt && results.isVariableIntegerInvolved(((DefinitionStmt) unit).getLeftOp())) {
-            unit.addTag(new StringTag("INTEGER DETECTED"));
+          ZeroLattice resolvedValue = results.resolvedForUnit.get(unit);
+          if (resolvedValue != null) {
+            unit.addTag(new StringTag("Resolved value for unit: " + resolvedValue.toString()));
           }
         }
       }

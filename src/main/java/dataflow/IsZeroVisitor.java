@@ -1,6 +1,10 @@
 package dataflow;
 
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static org.slf4j.LoggerFactory.getLogger;
+
+import java.util.Optional;
 
 import dataflow.abs.ValueVisitor;
 import dataflow.abs.ZeroLattice;
@@ -15,6 +19,8 @@ public class IsZeroVisitor {
 
   private VariableToLatticeMap variables;
 
+  public Optional<ZeroLattice> resolvedValueIfAssignment = empty();
+
   public IsZeroVisitor(VariableToLatticeMap variables) {
     this.variables = variables;
   }
@@ -28,6 +34,7 @@ public class IsZeroVisitor {
 
   private void visitDefinition(Local variable, ZeroLattice assignment) {
     variables.put(variable.getName(), assignment);
+    resolvedValueIfAssignment = of(assignment);
   }
 
 }
