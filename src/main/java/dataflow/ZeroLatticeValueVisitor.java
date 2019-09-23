@@ -1,20 +1,25 @@
-package dataflow.abs;
+package dataflow;
 
+import static dataflow.abs.ZeroLattice.MAYBE_ZERO;
 import static dataflow.abs.ZeroLattice.NOT_ZERO;
 import static dataflow.abs.ZeroLattice.ZERO;
 
-import dataflow.AbstractValueVisitor;
-import dataflow.ValueVisitor;
-import dataflow.VariableToLatticeMap;
+import java.util.Map;
+
+import dataflow.abs.ZeroLattice;
+import dataflow.utils.AbstractValueVisitor;
+import dataflow.utils.ValueVisitor;
 import soot.Local;
 
 public class ZeroLatticeValueVisitor extends AbstractValueVisitor<ZeroLattice> {
 
-  private final VariableToLatticeMap variables;
+  private final Map<String, ZeroLattice> variables;
   private ZeroLattice resolvedValue = ZeroLattice.BOTTOM;
+  private Boolean possibleDivisionByZero;
 
-  public ZeroLatticeValueVisitor(VariableToLatticeMap variables) {
+  public ZeroLatticeValueVisitor(Map<String, ZeroLattice> variables) {
     this.variables = variables;
+    this.possibleDivisionByZero = false;
   }
 
   @Override
@@ -25,6 +30,10 @@ public class ZeroLatticeValueVisitor extends AbstractValueVisitor<ZeroLattice> {
   @Override
   public void visitDivExpression(ZeroLattice leftOperand, ZeroLattice rightOperand) {
     resolvedValue = leftOperand.divideBy(rightOperand);
+
+    if (rightOperand.equals(ZERO) || rightOperand.equals(MAYBE_ZERO)) {
+      possibleDivisionByZero = true;
+    }
   }
 
   @Override
@@ -61,5 +70,9 @@ public class ZeroLatticeValueVisitor extends AbstractValueVisitor<ZeroLattice> {
   @Override
   public ValueVisitor cloneVisitor() {
     return new ZeroLatticeValueVisitor(variables);
+  }
+
+  public Boolean getPossibleDivisionByZero() {
+    return possibleDivisionByZero;
   }
 }

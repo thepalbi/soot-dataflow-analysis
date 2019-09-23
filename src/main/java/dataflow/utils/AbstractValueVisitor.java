@@ -1,4 +1,4 @@
-package dataflow;
+package dataflow.utils;
 
 import dataflow.errors.VisitorNotImplementedForType;
 import soot.Local;
@@ -42,4 +42,16 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
       throw new VisitorNotImplementedForType(expr.getClass().getName());
     }
   }
+
+  protected void visitLocal(Local variable) {}
+
+  protected void visitDivExpression(T leftOperand, T rightOperand) {}
+
+  protected void visitMulExpression(T leftOperand, T rightOperand) {}
+
+  protected void visitSubExpression(T leftOperand, T rightOperand) {}
+
+  protected void visitAddExpression(T leftOperand, T rightOperand) {}
+
+  protected void visitIntegerConstant(int value) {}
 }

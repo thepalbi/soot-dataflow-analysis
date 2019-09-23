@@ -1,7 +1,8 @@
-package dataflow.abs;
+package dataflow;
 
 import java.util.HashMap;
 
+import dataflow.abs.ZeroLattice;
 import soot.Value;
 
 public class ValueToZeroLatticeMap extends HashMap<Value, ZeroLattice> {

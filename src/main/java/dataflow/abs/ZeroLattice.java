@@ -1,7 +1,7 @@
 package dataflow.abs;
 
 /**
- * Lattice used in the ZeroAnalysis.
+ * Lattice used in the DivisionByZeroAnalysis.
  */
 public enum ZeroLattice {
 

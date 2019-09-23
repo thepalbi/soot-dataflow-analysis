@@ -1,7 +1,6 @@
 import java.util.Map;
 
-import dataflow.ZeroAnalysis;
-import dataflow.abs.ZeroLattice;
+import dataflow.DivisionByZeroAnalysis;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.PackManager;
@@ -13,15 +12,14 @@ import soot.toolkits.graph.ExceptionalUnitGraph;
 public class Launcher {
 
   public static void main(String[] args) {
-    PackManager.v().getPack("jtp").add(new Transform("jtp.ZeroAnalysis", new BodyTransformer() {
+    PackManager.v().getPack("jtp").add(new Transform("jtp.DivisionByZeroAnalysis", new BodyTransformer() {
 
       @Override
       protected void internalTransform(Body body, String phaseName, Map<String, String> options) {
-        ZeroAnalysis results = new ZeroAnalysis(new ExceptionalUnitGraph(body));
+        DivisionByZeroAnalysis results = new DivisionByZeroAnalysis(new ExceptionalUnitGraph(body));
         for (Unit unit : body.getUnits()) {
-          ZeroLattice resolvedValue = results.resolvedForUnit.get(unit);
-          if (resolvedValue != null) {
-            unit.addTag(new StringTag("Resolved value for unit: " + resolvedValue.toString()));
+          if (results.unitIsOffending(unit)) {
+            unit.addTag(new StringTag("Possible division by zero here"));
           }
         }
       }
