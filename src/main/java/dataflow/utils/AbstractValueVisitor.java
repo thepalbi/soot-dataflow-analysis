@@ -10,6 +10,11 @@ import soot.jimple.IntConstant;
 import soot.jimple.MulExpr;
 import soot.jimple.SubExpr;
 
+/**
+ * Abstract visitor implementations. Each new covered {@link Value} sub-type has to be added here.
+ * 
+ * @param <T>
+ */
 public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
 
   @Override

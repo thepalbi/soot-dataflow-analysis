@@ -61,4 +61,18 @@ public enum ZeroLattice {
       return MAYBE_ZERO;
     }
   }
+
+  public ZeroLattice supreme(ZeroLattice another) {
+    if (this.equals(BOTTOM) && !another.equals(BOTTOM)) {
+      return another;
+    } else if (another.equals(BOTTOM) && !this.equals(BOTTOM)) {
+      return this;
+      // Neither is BOTTOM
+    } else if (this.equals(another)) {
+      return this;
+      // They are different, and not BOTTOM => MAYBE_ZERO
+    } else {
+      return MAYBE_ZERO;
+    }
+  }
 }
