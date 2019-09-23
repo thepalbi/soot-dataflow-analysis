@@ -57,7 +57,7 @@ public class DivisionByZeroAnalysis extends ForwardFlowAnalysis<Unit, VariableTo
   }
 
   protected void merge(VariableToLatticeMap input1, VariableToLatticeMap input2, VariableToLatticeMap output) {
-    // TODO: Have to the the supreme of both values if there are conflicting keys
+    // TODO: Have to add the supreme of both values if there are conflicting keys
     output.putAll(input1);
     output.putAll(input2);
   }
