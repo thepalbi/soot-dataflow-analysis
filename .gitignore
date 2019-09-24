@@ -1,3 +1,5 @@
 target/*
 zero-analysis/target/*
+utils/target/*
 *.iml
+*.DS_Store
