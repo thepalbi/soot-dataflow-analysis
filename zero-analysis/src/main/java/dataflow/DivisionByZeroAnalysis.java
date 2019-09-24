@@ -2,6 +2,7 @@ package dataflow;
 
 import java.util.HashMap;
 
+import dataflow.abs.VariableToLatticeMap;
 import dataflow.abs.ZeroLattice;
 import soot.Local;
 import soot.Unit;

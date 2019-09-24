@@ -1,10 +1,8 @@
-package dataflow;
+package dataflow.abs;
 
 import static dataflow.abs.ZeroLattice.BOTTOM;
 
 import java.util.HashMap;
-
-import dataflow.abs.ZeroLattice;
 
 public class VariableToLatticeMap extends HashMap<String, ZeroLattice> {
 
