@@ -1,6 +1,7 @@
 target/*
 zero-analysis/target/*
 analysis-parent-pom/target/*
+sensible-data-leak-detector/target/*
 utils/target/*
 *.iml
 *.DS_Store
