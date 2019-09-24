@@ -1,5 +1,6 @@
 target/*
 zero-analysis/target/*
+analysis-parent-pom/target/*
 utils/target/*
 *.iml
 *.DS_Store

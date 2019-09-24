@@ -17,6 +17,8 @@
   <modules>
     <module>zero-analysis</module> 
     <module>utils</module>
+    <module>sensible-data-leak-detector</module>
+    <module>analysis-parent-pom</module>
   </modules>
 
 </project>
