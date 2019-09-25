@@ -11,6 +11,10 @@ public enum SensibilityLattice {
     this.priority = new ComparablePair(priority, innerPriority);
   }
 
+  public static boolean isSensible(SensibilityLattice v) {
+    return v.equals(HIGH) || v.equals(MAYBE_SENSIBLE);
+  }
+
   public static SensibilityLattice supremeBetween(SensibilityLattice v1, SensibilityLattice v2) {
     if (v1.equals(v2)) {
       return v1;
