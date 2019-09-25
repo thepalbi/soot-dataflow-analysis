@@ -24,6 +24,14 @@ import soot.jimple.InvokeStmt;
 import soot.toolkits.graph.ExceptionalUnitGraph;
 import soot.toolkits.scalar.ForwardFlowAnalysis;
 
+// TODO: Maybe it would be nice for the analysis to keep in the dataflow a trace from where each sensible data was originated.
+
+// TODO: Make this inter-procedural.
+
+// TODO: Add sensibility levels.
+
+// TODO: Add sanitization, and a larger collection of offending methods, even ones as VirtualInvokes, and possibly load all of them from a config file.
+
 public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, SensibilityLattice>> {
 
   private final Logger LOGGER = getLogger(SensibleDataAnalysis.class);
