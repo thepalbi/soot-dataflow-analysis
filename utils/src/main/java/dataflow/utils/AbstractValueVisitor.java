@@ -18,7 +18,7 @@ import soot.jimple.SubExpr;
 public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
 
   @Override
-  public ValueVisitor<T> visit(Value value) {
+  public final ValueVisitor<T> visit(Value value) {
     if (value instanceof IntConstant) {
       visitIntegerConstant(((IntConstant) value).value);
     } else if (value instanceof BinopExpr) {
@@ -29,7 +29,7 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
     return this;
   }
 
-  public void doVisitBinaryExpression(BinopExpr value) {
+  public final void doVisitBinaryExpression(BinopExpr value) {
     BinopExpr expr = value;
     // TODO: Figure out why the cast is needed here
     T leftVisitorResult = (T) cloneVisitor().visit(expr.getOp1()).done();
