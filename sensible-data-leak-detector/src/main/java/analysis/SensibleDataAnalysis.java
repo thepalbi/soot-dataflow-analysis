@@ -54,6 +54,9 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
                              Map<String, SensibilityLattice> out) {
     if (unit instanceof DefinitionStmt) {
       DefinitionStmt definition = (DefinitionStmt) unit;
+      new ContainsSensibleVariableVisitor(in).visit(definition.getRightOp()).done().ifPresent(sensibleLocalUsed -> {
+        markNewSensibleLocal(in, (Local) definition.getLeftOp());
+      });
     } else if (unit instanceof InvokeStmt) {
       InvokeExpr invokeExpr = ((InvokeStmt) unit).getInvokeExpr();
       SootMethod invokedMethod = invokeExpr.getMethod();
@@ -63,21 +66,25 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         assert invokeExpr.getArgCount() == 1;
         Value argument = invokeExpr.getArg(0);
         if (argument instanceof Local) {
-          Local sensibleLocal = (Local) argument;
-          LOGGER.warn("Just discovered a sensible variable named {}", sensibleLocal.getName());
-          in.put(sensibleLocal.getName(), HIGH);
+          markNewSensibleLocal(in, (Local) argument);
         }
       } else if (offendingMethod.contains(invokedMethod.getName())) {
         // This method is offending, if it has a sensible variable, WARN
         LOGGER.warn("Just found offending method call");
         invokeExpr.getArgs().stream()
-            .filter(argument -> new ContainsSensibleVariableVisitor(in).visit(argument).done())
+            .filter(argument -> new ContainsSensibleVariableVisitor(in).visit(argument).done().isPresent())
             .findFirst()
             .ifPresent(sensibleArgument -> LOGGER.warn("Local variable named {} is being leaked", sensibleArgument));
       }
     }
     out.clear();
     out.putAll(in);
+  }
+
+  private void markNewSensibleLocal(Map<String, SensibilityLattice> in, Local argument) {
+    Local sensibleLocal = argument;
+    LOGGER.warn("Just discovered a sensible variable named {}", sensibleLocal.getName());
+    in.put(sensibleLocal.getName(), HIGH);
   }
 
   @Override

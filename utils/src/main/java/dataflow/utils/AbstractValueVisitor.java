@@ -6,7 +6,9 @@ import soot.Value;
 import soot.jimple.AddExpr;
 import soot.jimple.BinopExpr;
 import soot.jimple.DivExpr;
+import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.IntConstant;
+import soot.jimple.InvokeExpr;
 import soot.jimple.MulExpr;
 import soot.jimple.SubExpr;
 
@@ -25,6 +27,10 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
       doVisitBinaryExpression((BinopExpr) value);
     } else if (value instanceof Local) {
       visitLocal((Local) value);
+    } else if (value instanceof InstanceInvokeExpr) {
+      visitInstanceInvokeExp((InstanceInvokeExpr) value);
+    } else if (value instanceof InvokeExpr) {
+      visitInvokeExpr((InvokeExpr) value);
     }
     return this;
   }
@@ -59,4 +65,8 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
   protected void visitAddExpression(T leftOperand, T rightOperand) {}
 
   protected void visitIntegerConstant(int value) {}
+
+  protected void visitInvokeExpr(InvokeExpr invokeExpr) {}
+
+  protected void visitInstanceInvokeExp(InstanceInvokeExpr instanceInvokeExpr) {}
 }

@@ -3,5 +3,6 @@ zero-analysis/target/*
 analysis-parent-pom/target/*
 sensible-data-leak-detector/target/*
 utils/target/*
+sootOutput/*
 *.iml
 *.DS_Store
