@@ -70,11 +70,14 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         }
       } else if (offendingMethod.contains(invokedMethod.getName())) {
         // This method is offending, if it has a sensible variable, WARN
-        LOGGER.warn("Just found offending method call");
+        LOGGER.debug("Just found offending method call");
         invokeExpr.getArgs().stream()
             .filter(argument -> new ContainsSensibleVariableVisitor(in).visit(argument).done().isPresent())
             .findFirst()
-            .ifPresent(sensibleArgument -> LOGGER.warn("Local variable named {} is being leaked", sensibleArgument));
+            .ifPresent(sensibleArgument -> {
+              LOGGER.debug("Local variable named {} is being leaked", sensibleArgument);
+              possibleLeakInUnit.put(unit, true);
+            });
       }
     }
     out.clear();
@@ -83,8 +86,12 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
   private void markNewSensibleLocal(Map<String, SensibilityLattice> in, Local argument) {
     Local sensibleLocal = argument;
-    LOGGER.warn("Just discovered a sensible variable named {}", sensibleLocal.getName());
+    LOGGER.debug("Just discovered a sensible variable named {}", sensibleLocal.getName());
     in.put(sensibleLocal.getName(), HIGH);
+  }
+
+  public boolean possibleLeakInUnit(Unit unit) {
+    return possibleLeakInUnit.getOrDefault(unit, false);
   }
 
   @Override
