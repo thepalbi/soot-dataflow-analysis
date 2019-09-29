@@ -42,13 +42,10 @@ public abstract class SootTestCase {
         .set_soot_classpath(
                             "/Users/pbalbi/Facultad/aap/repo/sensible-data-leak-detector/target/test-classes:" +
                                 "/Users/pbalbi/Facultad/aap/repo/sensible-data-leak-detector/target/classes");
-    Options.v().classes().add("soot.TestMain");
     Options.v().set_prepend_classpath(true);
     Options.v().set_output_format(Options.output_format_jimple);
     Options.v().set_keep_line_number(true);
     PhaseOptions.v().setPhaseOption("jtp.test", "on");
-    Scene.v().loadNecessaryClasses();
-    assert Scene.v().getApplicationClasses().size() > 0;
   }
 
   @After
@@ -56,7 +53,13 @@ public abstract class SootTestCase {
     transformsToRegister.clear();
   }
 
-  public void runSoot() {
+  public void runSootForTargetClass(String fullyQualifiedName) {
+    Options.v().classes().add(fullyQualifiedName);
+    doRunSoot();
+  }
+
+  private void doRunSoot() {
+    Scene.v().loadNecessaryClasses();
     PackManager.v().runPacks();
   }
 

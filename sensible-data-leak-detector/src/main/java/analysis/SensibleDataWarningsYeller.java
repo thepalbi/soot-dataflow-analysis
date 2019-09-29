@@ -26,7 +26,7 @@ public class SensibleDataWarningsYeller extends BodyTransformer {
 
   }
 
-  private static int getLineNumberFromUnit(Unit unit) {
+  public static int getLineNumberFromUnit(Unit unit) {
     return unit.getTags().stream()
         .filter(tag -> tag instanceof LineNumberTag)
         .findFirst()

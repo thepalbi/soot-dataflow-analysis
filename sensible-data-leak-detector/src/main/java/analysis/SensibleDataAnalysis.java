@@ -12,8 +12,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import analysis.abstraction.SensibilityLattice;
 import org.slf4j.Logger;
+
+import analysis.abstraction.SensibilityLattice;
+import soot.Body;
 import soot.Local;
 import soot.SootMethod;
 import soot.Unit;
@@ -39,6 +41,10 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   private Map<String, SensibilityLattice> startingLocalsMap;
   private Map<Unit, Boolean> possibleLeakInUnit;
   private Set<String> offendingMethod;
+
+  public static SensibleDataAnalysis forBody(Body body) {
+    return new SensibleDataAnalysis(new ExceptionalUnitGraph(body));
+  }
 
   public SensibleDataAnalysis(ExceptionalUnitGraph graph) {
     super(graph);
