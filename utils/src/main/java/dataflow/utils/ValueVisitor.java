@@ -15,7 +15,7 @@ public interface ValueVisitor<T> {
    * @param value the {@link Value} to visit
    * @return
    */
-  ValueVisitor visit(Value value);
+  ValueVisitor<T> visit(Value value);
 
   /**
    * Gets the result of this visitor. MUST be called after {@link ValueVisitor#visit(Value)}.
@@ -31,6 +31,6 @@ public interface ValueVisitor<T> {
    * 
    * @return a new visitor
    */
-  ValueVisitor cloneVisitor();
+  ValueVisitor<T> cloneVisitor();
 
 }

@@ -15,6 +15,11 @@
     <name>Archetype - analysis-parent-pom</name>
     <url>http://maven.apache.org</url>
 
+    <properties>
+        <launcherClass>soot.main.Main</launcherClass>
+    </properties>
+
+
     <build>
         <plugins>
             <plugin>
@@ -23,7 +28,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>Launcher</mainClass>
+                            <mainClass>${launcherClass}</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
