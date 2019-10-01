@@ -5,12 +5,10 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.util.Map;
 
 import org.slf4j.Logger;
-
 import soot.Body;
 import soot.BodyTransformer;
 import soot.Unit;
 import soot.tagkit.LineNumberTag;
-import soot.toolkits.graph.ExceptionalUnitGraph;
 
 public class SensibleDataWarningsYeller extends BodyTransformer {
 
@@ -18,7 +16,7 @@ public class SensibleDataWarningsYeller extends BodyTransformer {
 
   @Override
   protected void internalTransform(Body body, String s, Map<String, String> map) {
-    SensibleDataAnalysis analysis = new SensibleDataAnalysis(new ExceptionalUnitGraph(body));
+    SensibleDataAnalysis analysis = SensibleDataAnalysis.forBody(body);
     body.getUnits().stream()
         .filter(analysis::possibleLeakInUnit)
         .forEach(unit -> LOGGER.warn("Possible leak found in line {}",

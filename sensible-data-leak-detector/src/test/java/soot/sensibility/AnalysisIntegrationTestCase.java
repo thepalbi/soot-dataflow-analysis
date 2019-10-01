@@ -61,6 +61,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
     runSootForTargetClass("soot.PrintOnCalledMethod");
     PackManager.v().writeOutput();
     assertThat(offendingLines.size(), is(1));
-    assertThat(offendingLines, contains(is(15)));
+    // Note that the offending method is the method call itself
+    assertThat(offendingLines, contains(is(11)));
   }
 }

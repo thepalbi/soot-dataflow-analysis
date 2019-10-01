@@ -9,12 +9,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
 import analysis.abstraction.SensibilityLattice;
+import javafx.util.Pair;
 import soot.Body;
 import soot.Local;
 import soot.SootMethod;
@@ -40,13 +44,25 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
   private Map<String, SensibilityLattice> startingLocalsMap;
   private Map<Unit, Boolean> possibleLeakInUnit;
+  private final Map<Integer, SensibilityLattice> methodParams;
   private Set<String> offendingMethod;
 
   public static SensibleDataAnalysis forBody(Body body) {
-    return new SensibleDataAnalysis(new ExceptionalUnitGraph(body));
+    return new SensibleDataAnalysis(new ExceptionalUnitGraph(body), new HashMap<>());
   }
 
-  public SensibleDataAnalysis(ExceptionalUnitGraph graph) {
+  /**
+   * Creates a new {@link SensibleDataAnalysis} for the given body, and method params
+   * 
+   * @param body
+   * @param params the method params sensibility map
+   * @return
+   */
+  public static SensibleDataAnalysis forBodyAndParams(Body body, Map<Integer, SensibilityLattice> params) {
+    return new SensibleDataAnalysis(new ExceptionalUnitGraph(body), params);
+  }
+
+  public SensibleDataAnalysis(ExceptionalUnitGraph graph, Map<Integer, SensibilityLattice> methodParams) {
     super(graph);
 
     offendingMethod = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
@@ -54,10 +70,11 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
     startingLocalsMap = new HashMap<>();
     possibleLeakInUnit = new HashMap<>();
+    this.methodParams = methodParams;
 
     // As starting point, save all locals as bottom
     for (Local variable : graph.getBody().getLocals()) {
-      startingLocalsMap.put(variable.getName(), SensibilityLattice.getBottom());
+      this.startingLocalsMap.put(variable.getName(), SensibilityLattice.getBottom());
     }
 
     doAnalysis();
@@ -68,9 +85,8 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
                              Map<String, SensibilityLattice> out) {
     if (unit instanceof DefinitionStmt) {
       DefinitionStmt definition = (DefinitionStmt) unit;
-      new ContainsSensibleVariableVisitor(in).visit(definition.getRightOp()).done().ifPresent(sensibleLocalUsed -> {
-        markNewSensibleLocal(in, (Local) definition.getLeftOp());
-      });
+      new ContainsSensibleVariableVisitor(in, methodParams).visit(definition.getRightOp()).done()
+          .ifPresent(sensibleLocalUsed -> markNewSensibleLocal(in, (Local) definition.getLeftOp()));
     } else if (unit instanceof InvokeStmt) {
       InvokeExpr invokeExpr = ((InvokeStmt) unit).getInvokeExpr();
       SootMethod invokedMethod = invokeExpr.getMethod();
@@ -92,6 +108,22 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
               LOGGER.debug("Local variable named {} is being leaked", sensibleArgument);
               possibleLeakInUnit.put(unit, true);
             });
+      } else if (invokedMethod.getDeclaringClass().getPackageName().equals("soot")) {
+        // Maybe this method leaks some sensible variable. Run analysis on method
+        // Collect params sensibility
+        AtomicInteger index = new AtomicInteger(0);
+        Map<Integer, SensibilityLattice> paramsSensibility = invokeExpr.getArgs().stream()
+            .map(value -> new Pair<>(index.getAndIncrement(), value))
+            .filter(paramPair -> paramPair.getValue() instanceof Local)
+            .map(paramPair -> new Pair<>(paramPair.getKey(),
+                                         in.getOrDefault(((Local) paramPair.getValue()).getName(),
+                                                         BOTTOM)))
+            .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getValue()));
+        SensibleDataAnalysis calledMethodAnalysis =
+            SensibleDataAnalysis.forBodyAndParams(invokedMethod.getActiveBody(), paramsSensibility);
+        if (!calledMethodAnalysis.getOffendingUnits().isEmpty()) {
+          possibleLeakInUnit.put(unit, true);
+        }
       }
     }
     out.clear();
@@ -106,6 +138,10 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
   public boolean possibleLeakInUnit(Unit unit) {
     return possibleLeakInUnit.getOrDefault(unit, false);
+  }
+
+  public List<Unit> getOffendingUnits() {
+    return possibleLeakInUnit.keySet().stream().collect(Collectors.toList());
   }
 
   @Override

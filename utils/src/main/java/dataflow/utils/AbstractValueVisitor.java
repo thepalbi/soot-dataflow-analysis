@@ -10,6 +10,7 @@ import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.IntConstant;
 import soot.jimple.InvokeExpr;
 import soot.jimple.MulExpr;
+import soot.jimple.ParameterRef;
 import soot.jimple.SubExpr;
 
 /**
@@ -31,6 +32,8 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
       visitInstanceInvokeExp((InstanceInvokeExpr) value);
     } else if (value instanceof InvokeExpr) {
       visitInvokeExpr((InvokeExpr) value);
+    } else if (value instanceof ParameterRef) {
+      visitParameterRef((ParameterRef) value);
     }
     return this;
   }
@@ -69,4 +72,6 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
   protected void visitInvokeExpr(InvokeExpr invokeExpr) {}
 
   protected void visitInstanceInvokeExp(InstanceInvokeExpr instanceInvokeExpr) {}
+
+  protected void visitParameterRef(ParameterRef parameter) {}
 }
