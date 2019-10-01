@@ -66,12 +66,18 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
   }
 
   @Test
-  public void sensibleDataReturnedByMethod() {
-    runSootForTargetClass("soot.SensibleDataReturnedByMethod");
-    PackManager.v().writeOutput();
+  public void sensibleDataReturnedByKnownMethod() {
+    runSootForTargetClass("soot.SensibleDataReturnedByKnownMethod");
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(9)));
+  }
 
+  @Test
+  public void sensibleDataReturnedByUnknownMethod() {
+    runSootForTargetClass("soot.SensibleDataReturnedByUnknownMethod");
+    assertThat(offendingLines.size(), is(1));
+    // Note that the offending method is the method call itself
+    assertThat(offendingLines, contains(is(14)));
   }
 }

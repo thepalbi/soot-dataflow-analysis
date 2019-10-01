@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.slf4j.Logger;
 import soot.Body;
 import soot.BodyTransformer;
+import soot.G;
 import soot.PackManager;
 import soot.PhaseOptions;
 import soot.Scene;
@@ -58,7 +59,11 @@ public abstract class SootTestCase {
 
   @After
   public void tearDown() throws Exception {
+    PackManager.v().getPack(JTP).remove(TEST_PHASE_NAME);
+    transformsToRegister.stream()
+        .forEach(transform -> PackManager.v().getPack(JTP).remove(transform.getPhaseName()));
     transformsToRegister.clear();
+    G.reset();
   }
 
   public void runSootForTargetClass(String fullyQualifiedName) {
