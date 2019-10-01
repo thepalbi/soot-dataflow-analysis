@@ -64,4 +64,14 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(11)));
   }
+
+  @Test
+  public void interproceduralWithSensibleDataReturnedByMethod() {
+    runSootForTargetClass("soot.SensibleDataReturnedByMethod");
+    PackManager.v().writeOutput();
+    assertThat(offendingLines.size(), is(1));
+    // Note that the offending method is the method call itself
+    assertThat(offendingLines, contains(is(9)));
+
+  }
 }
