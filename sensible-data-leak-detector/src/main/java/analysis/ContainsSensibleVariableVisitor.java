@@ -53,11 +53,14 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Option
   @Override
   protected void visitInvokeExpr(InvokeExpr invokeExpr) {
     // TODO: Maybe the method called here is offending. Add check
-    sensibleVariable = invokeExpr.getArgs()
-        .stream()
-        .filter(argument -> this.cloneVisitor().visit(argument).done().isPresent())
-        .findFirst()
-        .map(value -> (Local) value);
+    if (invokeExpr.getMethod().getDeclaringClass().getPackageName().equals("soot")) {
+      // Method defined in same package as main class
+      if (SensibleDataAnalysis.forBodyAndParams(invokeExpr.getMethod().getActiveBody(),
+                                                SensibleDataAnalysis.getArgumentSensibilityFor(localSensibilityLevel, invokeExpr))
+          .isReturningSensibleValue()) {
+        sensibleVariable = getFakeLocal();
+      }
+    }
   }
 
   @Override
@@ -76,7 +79,11 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Option
     SensibilityLattice valueForParameter = parametersSensibility.getOrDefault(parameter.getIndex(), BOTTOM);
     if (isSensible(valueForParameter)) {
       // TODO: API is kind of shity, should not use as result the offending local I'm not using it
-      sensibleVariable = Optional.of(new JimpleLocal("fake", new IntType(null)));
+      sensibleVariable = getFakeLocal();
     }
+  }
+
+  private Optional<Local> getFakeLocal() {
+    return Optional.of(new JimpleLocal("fake", new IntType(null)));
   }
 }

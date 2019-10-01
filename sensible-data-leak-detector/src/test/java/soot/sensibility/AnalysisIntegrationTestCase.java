@@ -50,14 +50,14 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
   }
 
   @Test
-  public void interproceduralWithPrintLnOnMainMethod() {
+  public void printLnOnMainMethod() {
     runSootForTargetClass("soot.SimpleInterprocedural");
     assertThat(offendingLines.size(), is(1));
     assertThat(offendingLines, contains(is(12)));
   }
 
   @Test
-  public void interproceduralWithPrintLnOnCalledMethod() {
+  public void printLnOnCalledMethod() {
     runSootForTargetClass("soot.PrintOnCalledMethod");
     PackManager.v().writeOutput();
     assertThat(offendingLines.size(), is(1));
@@ -66,7 +66,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
   }
 
   @Test
-  public void interproceduralWithSensibleDataReturnedByMethod() {
+  public void sensibleDataReturnedByMethod() {
     runSootForTargetClass("soot.SensibleDataReturnedByMethod");
     PackManager.v().writeOutput();
     assertThat(offendingLines.size(), is(1));

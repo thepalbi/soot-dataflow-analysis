@@ -27,6 +27,7 @@ import soot.Value;
 import soot.jimple.DefinitionStmt;
 import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
+import soot.jimple.ReturnStmt;
 import soot.toolkits.graph.ExceptionalUnitGraph;
 import soot.toolkits.scalar.ForwardFlowAnalysis;
 
@@ -46,6 +47,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   private Map<Unit, Boolean> possibleLeakInUnit;
   private final Map<Integer, SensibilityLattice> methodParams;
   private Set<String> offendingMethod;
+  private boolean returningSensibleValue = false;
 
   public static SensibleDataAnalysis forBody(Body body) {
     return new SensibleDataAnalysis(new ExceptionalUnitGraph(body), new HashMap<>());
@@ -111,23 +113,31 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
       } else if (invokedMethod.getDeclaringClass().getPackageName().equals("soot")) {
         // Maybe this method leaks some sensible variable. Run analysis on method
         // Collect params sensibility
-        AtomicInteger index = new AtomicInteger(0);
-        Map<Integer, SensibilityLattice> paramsSensibility = invokeExpr.getArgs().stream()
-            .map(value -> new Pair<>(index.getAndIncrement(), value))
-            .filter(paramPair -> paramPair.getValue() instanceof Local)
-            .map(paramPair -> new Pair<>(paramPair.getKey(),
-                                         in.getOrDefault(((Local) paramPair.getValue()).getName(),
-                                                         BOTTOM)))
-            .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getValue()));
+        Map<Integer, SensibilityLattice> paramsSensibility = getArgumentSensibilityFor(in, invokeExpr);
         SensibleDataAnalysis calledMethodAnalysis =
             SensibleDataAnalysis.forBodyAndParams(invokedMethod.getActiveBody(), paramsSensibility);
         if (!calledMethodAnalysis.getOffendingUnits().isEmpty()) {
           possibleLeakInUnit.put(unit, true);
         }
       }
+    } else if (unit instanceof ReturnStmt) {
+      ReturnStmt ret = (ReturnStmt) unit;
+      returningSensibleValue = new ContainsSensibleVariableVisitor(in).visit(ret.getOp()).done().isPresent();
     }
     out.clear();
     out.putAll(in);
+  }
+
+  public static Map<Integer, SensibilityLattice> getArgumentSensibilityFor(Map<String, SensibilityLattice> in,
+                                                                           InvokeExpr invokeExpr) {
+    AtomicInteger index = new AtomicInteger(0);
+    return invokeExpr.getArgs().stream()
+        .map(value -> new Pair<>(index.getAndIncrement(), value))
+        .filter(paramPair -> paramPair.getValue() instanceof Local)
+        .map(paramPair -> new Pair<>(paramPair.getKey(),
+                                     in.getOrDefault(((Local) paramPair.getValue()).getName(),
+                                                     BOTTOM)))
+        .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getValue()));
   }
 
   private void markNewSensibleLocal(Map<String, SensibilityLattice> in, Local argument) {
@@ -168,5 +178,9 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   protected void copy(Map<String, SensibilityLattice> input, Map<String, SensibilityLattice> out) {
     out.clear();
     out.putAll(input);
+  }
+
+  public boolean isReturningSensibleValue() {
+    return returningSensibleValue;
   }
 }
