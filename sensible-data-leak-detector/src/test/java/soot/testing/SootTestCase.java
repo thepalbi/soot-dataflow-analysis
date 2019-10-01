@@ -38,13 +38,21 @@ public abstract class SootTestCase {
       }
     }));
 
+    // Set as classpath both test and src classes
+    // TODO: This should be non-absolute
     Options.v()
         .set_soot_classpath(
                             "/Users/pbalbi/Facultad/aap/repo/sensible-data-leak-detector/target/test-classes:" +
                                 "/Users/pbalbi/Facultad/aap/repo/sensible-data-leak-detector/target/classes");
+    // Use default JVM rt.jar
     Options.v().set_prepend_classpath(true);
+    // Print tags in produced jimple
+    Options.v().set_print_tags_in_output(true);
+    // Use Jimple IR
     Options.v().set_output_format(Options.output_format_jimple);
+    // Extract line-numbers from .class. NECESSARY
     Options.v().set_keep_line_number(true);
+    // Turn on tested phase
     PhaseOptions.v().setPhaseOption("jtp.test", "on");
   }
 

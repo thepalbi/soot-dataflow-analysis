@@ -14,10 +14,11 @@ import analysis.SensibleDataWarningsYeller;
 import org.junit.Before;
 import org.junit.Test;
 import soot.Body;
+import soot.PackManager;
 import soot.Unit;
 import soot.testing.SootTestCase;
 
-public class IntraproceduralTestCase extends SootTestCase {
+public class AnalysisIntegrationTestCase extends SootTestCase {
 
   private List<Integer> offendingLines = new LinkedList<>();
 
@@ -42,9 +43,24 @@ public class IntraproceduralTestCase extends SootTestCase {
   }
 
   @Test
-  public void test() {
+  public void simpleOneMethodProgramWithSensiblePrintLn() {
     runSootForTargetClass("soot.TestMain");
     assertThat(offendingLines.size(), is(2));
     assertThat(offendingLines, contains(is(11), is(13)));
+  }
+
+  @Test
+  public void interproceduralWithPrintLnOnMainMethod() {
+    runSootForTargetClass("soot.SimpleInterprocedural");
+    assertThat(offendingLines.size(), is(1));
+    assertThat(offendingLines, contains(is(12)));
+  }
+
+  @Test
+  public void interproceduralWithPrintLnOnCalledMethod() {
+    runSootForTargetClass("soot.PrintOnCalledMethod");
+    PackManager.v().writeOutput();
+    assertThat(offendingLines.size(), is(1));
+    assertThat(offendingLines, contains(is(15)));
   }
 }
