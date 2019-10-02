@@ -1,7 +1,6 @@
 package analysis;
 
 import static analysis.abstraction.SensibilityLattice.BOTTOM;
-import static analysis.abstraction.SensibilityLattice.HIGH;
 import static analysis.abstraction.SensibilityLattice.supremeBetween;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -78,11 +77,6 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
     out.clear();
     out.putAll(in);
-  }
-
-  private void markNewSensibleLocal(Map<String, SensibilityLattice> in, String localName) {
-    LOGGER.debug("Just discovered a sensible variable named {}", localName);
-    in.put(localName, HIGH);
   }
 
   public boolean possibleLeakInUnit(Unit unit) {

@@ -1,6 +1,6 @@
 package soot.sensibility;
 
-import static analysis.SensibleDataWarningsYeller.getLineNumberFromUnit;
+import static soot.UnitUtils.getLineNumberFromUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
