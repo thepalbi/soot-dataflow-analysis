@@ -2,8 +2,7 @@ package soot;
 
 import analysis.SensibilityMarker;
 
-public class SensibleDataReturnedByKnownMethod
-{
+public class SensibleDataReturnedByKnownMethod {
 
   public static void main(String[] args) {
     String someSensibleData = getSensibleData();
