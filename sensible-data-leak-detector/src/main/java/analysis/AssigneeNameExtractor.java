@@ -36,9 +36,9 @@ public class AssigneeNameExtractor extends AbstractValueVisitor<String> {
   protected void visitArrayRef(ArrayRef ref) {
     // Visit base of arrayRef, that's the name of the array itself
     new AssigneeNameExtractor(nameBuilder).visit(ref.getBase());
-    // Concat the index of it, after a dot
-    nameBuilder.append(".");
-    new AssigneeNameExtractor(nameBuilder).visit(ref.getIndex());
+    // Previously I was concatenating the accessed index with the array
+    // name, but it's not worth since in that case I should be able to
+    // correlate base variable with all assigned indexes. Not worth!
   }
 
   @Override
