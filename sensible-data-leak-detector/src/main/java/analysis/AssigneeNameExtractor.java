@@ -6,6 +6,9 @@ import soot.Local;
 import soot.Value;
 import soot.jimple.ArrayRef;
 
+/**
+ * {@link ValueVisitor} used to extract an assignee name inside a {@link soot.jimple.DefinitionStmt}.
+ */
 public class AssigneeNameExtractor extends AbstractValueVisitor<String> {
 
   AssigneeNameExtractor() {
@@ -18,6 +21,12 @@ public class AssigneeNameExtractor extends AbstractValueVisitor<String> {
 
   private StringBuilder nameBuilder;
 
+  /**
+   * Extract the name of the assignee inside a {@link soot.jimple.DefinitionStmt}.
+   * 
+   * @param assignee the assignee
+   * @return the resolved name
+   */
   public static String from(Value assignee) {
     return new AssigneeNameExtractor().visit(assignee).done();
   }
