@@ -1,6 +1,7 @@
 package analysis;
 
 import static analysis.StatementVisitor.getArgumentSensibilityFor;
+import static analysis.StatementVisitor.someValueApplies;
 import static analysis.abstraction.SensibilityLattice.BOTTOM;
 import static analysis.abstraction.SensibilityLattice.isSensible;
 
@@ -10,6 +11,7 @@ import java.util.Map;
 import analysis.abstraction.SensibilityLattice;
 import dataflow.utils.AbstractValueVisitor;
 import soot.Local;
+import soot.SootClass;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
 import soot.jimple.ParameterRef;
@@ -23,15 +25,18 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
   private final Map<String, SensibilityLattice> localSensibilityLevel;
   private Map<Integer, SensibilityLattice> parametersSensibility;
   private Boolean isSensible;
+  private SootClass mainClass;
 
-  public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel) {
-    this(localsSensibilityLevel, new HashMap<>());
+  public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel, SootClass mainClass) {
+    this(localsSensibilityLevel, new HashMap<>(), mainClass);
   }
 
   public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel,
-                                         Map<Integer, SensibilityLattice> parametersSensibility) {
+                                         Map<Integer, SensibilityLattice> parametersSensibility,
+                                         SootClass mainClass) {
     this.localSensibilityLevel = localsSensibilityLevel;
     this.parametersSensibility = parametersSensibility;
+    this.mainClass = mainClass;
     this.isSensible = false;
   }
 
@@ -42,7 +47,7 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
 
   @Override
   public ContainsSensibleVariableVisitor cloneVisitor() {
-    return new ContainsSensibleVariableVisitor(localSensibilityLevel, parametersSensibility);
+    return new ContainsSensibleVariableVisitor(localSensibilityLevel, parametersSensibility, mainClass);
   }
 
   @Override
@@ -53,17 +58,13 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
   @Override
   protected void visitInvokeExpr(InvokeExpr invokeExpr) {
     // TODO: Maybe the method called here is offending. Add check
-    if (invokeExpr.getMethod().getDeclaringClass().getPackageName().equals("soot")) {
+    if (invokeExpr.getMethod().getDeclaringClass().equals(mainClass)) {
       // Method defined in same package as main class
-      if (SensibleDataAnalysis.forBodyAndParams(invokeExpr.getMethod().getActiveBody(),
-                                                getArgumentSensibilityFor(localSensibilityLevel, invokeExpr.getArgs()))
-          .isReturningSensibleValue()) {
-        isSensible = true;
-      }
+      isSensible = SensibleDataAnalysis.forBodyAndParams(invokeExpr.getMethod().getActiveBody(),
+                                                         getArgumentSensibilityFor(localSensibilityLevel, invokeExpr.getArgs()))
+          .isReturningSensibleValue();
     } else {
-      isSensible = invokeExpr.getArgs().stream()
-          .map(value -> this.cloneVisitor().visit(value).done())
-          .reduce(false, (foundSensibleSoFar, isCurrentValueSensible) -> foundSensibleSoFar || isCurrentValueSensible);
+      isSensible = someValueApplies(invokeExpr.getArgs(), this.cloneVisitor());
     }
   }
 

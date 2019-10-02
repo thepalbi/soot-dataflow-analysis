@@ -5,14 +5,13 @@ import static analysis.abstraction.SensibilityLattice.supremeBetween;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import analysis.abstraction.SensibilityLattice;
 import org.slf4j.Logger;
 import soot.Body;
 import soot.Local;
+import soot.SootClass;
 import soot.Unit;
 import soot.jimple.Stmt;
 import soot.toolkits.graph.ExceptionalUnitGraph;
@@ -29,10 +28,11 @@ import soot.toolkits.scalar.ForwardFlowAnalysis;
 public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, SensibilityLattice>> {
 
   private final Logger LOGGER = getLogger(SensibleDataAnalysis.class);
+  private final SootClass mainClass;
+  private final Map<Integer, SensibilityLattice> methodParams;
 
   private Map<String, SensibilityLattice> startingLocalsMap;
   private Map<Unit, Boolean> possibleLeakInUnit;
-  private final Map<Integer, SensibilityLattice> methodParams;
   private boolean returningSensibleValue = false;
 
   public static SensibleDataAnalysis forBody(Body body) {
@@ -53,9 +53,10 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   public SensibleDataAnalysis(ExceptionalUnitGraph graph, Map<Integer, SensibilityLattice> methodParams) {
     super(graph);
 
-    startingLocalsMap = new HashMap<>();
-    possibleLeakInUnit = new HashMap<>();
+    this.startingLocalsMap = new HashMap<>();
+    this.possibleLeakInUnit = new HashMap<>();
     this.methodParams = methodParams;
+    this.mainClass = graph.getBody().getMethod().getDeclaringClass();
 
     // As starting point, save all locals as bottom
     for (Local variable : graph.getBody().getLocals()) {
@@ -69,7 +70,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   protected void flowThrough(Map<String, SensibilityLattice> in, Unit unit,
                              Map<String, SensibilityLattice> out) {
 
-    StatementVisitor visitor = new StatementVisitor(in, methodParams).visit((Stmt) unit);
+    StatementVisitor visitor = new StatementVisitor(in, methodParams, mainClass).visit((Stmt) unit);
 
     possibleLeakInUnit.put(unit, visitor.getDoesStatementLeak());
     // Since a return statement is last in the CFG, it's not needed to prevent overwrites
@@ -83,8 +84,8 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
     return possibleLeakInUnit.getOrDefault(unit, false);
   }
 
-  public List<Unit> getOffendingUnits() {
-    return possibleLeakInUnit.keySet().stream().collect(Collectors.toList());
+  public boolean noLeaksDetected() {
+    return possibleLeakInUnit.isEmpty();
   }
 
   @Override
@@ -104,7 +105,6 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
       SensibilityLattice currentValue = out.getOrDefault(variable, BOTTOM);
       out.put(variable, supremeBetween(input2.get(variable), currentValue));
     }
-
   }
 
   @Override
