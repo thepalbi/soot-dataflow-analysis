@@ -1,27 +1,28 @@
 package analysis;
 
+import static analysis.SensibleDataAnalysis.getArgumentSensibilityFor;
 import static analysis.abstraction.SensibilityLattice.BOTTOM;
 import static analysis.abstraction.SensibilityLattice.isSensible;
-import static java.util.Optional.empty;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import analysis.abstraction.SensibilityLattice;
 import dataflow.utils.AbstractValueVisitor;
-import soot.IntType;
 import soot.Local;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
 import soot.jimple.ParameterRef;
-import soot.jimple.internal.JimpleLocal;
 
-public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Optional<Local>> {
+/**
+ * {@link dataflow.utils.ValueVisitor} that checks whether a {@link soot.Value} is sensible accordin to the method arguments, or
+ * the locals sensiblity level.
+ */
+public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolean> {
 
   private final Map<String, SensibilityLattice> localSensibilityLevel;
   private Map<Integer, SensibilityLattice> parametersSensibility;
-  private Optional<Local> sensibleVariable = empty();
+  private Boolean isSensible;
 
   public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel) {
     this(localsSensibilityLevel, new HashMap<>());
@@ -31,11 +32,12 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Option
                                          Map<Integer, SensibilityLattice> parametersSensibility) {
     this.localSensibilityLevel = localsSensibilityLevel;
     this.parametersSensibility = parametersSensibility;
+    this.isSensible = false;
   }
 
   @Override
-  public Optional<Local> done() {
-    return sensibleVariable;
+  public Boolean done() {
+    return isSensible;
   }
 
   @Override
@@ -45,9 +47,7 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Option
 
   @Override
   protected void visitLocal(Local variable) {
-    if (isSensible(localSensibilityLevel.get(variable.getName()))) {
-      sensibleVariable = Optional.of(variable);
-    }
+    this.isSensible = isSensible(localSensibilityLevel.get(variable.getName()));
   }
 
   @Override
@@ -56,15 +56,14 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Option
     if (invokeExpr.getMethod().getDeclaringClass().getPackageName().equals("soot")) {
       // Method defined in same package as main class
       if (SensibleDataAnalysis.forBodyAndParams(invokeExpr.getMethod().getActiveBody(),
-                                                SensibleDataAnalysis.getArgumentSensibilityFor(localSensibilityLevel, invokeExpr))
+                                                getArgumentSensibilityFor(localSensibilityLevel, invokeExpr))
           .isReturningSensibleValue()) {
-        sensibleVariable = getFakeLocal();
+        isSensible = true;
       }
     } else {
-      sensibleVariable = invokeExpr.getArgs().stream()
-          .filter(value -> this.cloneVisitor().visit(value).done().isPresent())
-          .map(value -> (Local) value)
-          .findFirst();
+      isSensible = invokeExpr.getArgs().stream()
+          .map(value -> this.cloneVisitor().visit(value).done())
+          .reduce(false, (foundSensibleSoFar, isCurrentValueSensible) -> foundSensibleSoFar || isCurrentValueSensible);
     }
   }
 
@@ -72,8 +71,8 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Option
   protected void visitInstanceInvokeExp(InstanceInvokeExpr instanceInvokeExpr) {
     // TODO: Maybe change to maybe sensible in this cases
     // Maybe instance whose method is being invoked is sensible
-    sensibleVariable = this.cloneVisitor().visit(instanceInvokeExpr.getBase()).done();
-    if (!sensibleVariable.isPresent()) {
+    isSensible = this.cloneVisitor().visit(instanceInvokeExpr.getBase()).done();
+    if (!isSensible) {
       // Or maybe some of its arguments are sensible
       visitInvokeExpr(instanceInvokeExpr);
     }
@@ -82,13 +81,7 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Option
   @Override
   protected void visitParameterRef(ParameterRef parameter) {
     SensibilityLattice valueForParameter = parametersSensibility.getOrDefault(parameter.getIndex(), BOTTOM);
-    if (isSensible(valueForParameter)) {
-      // TODO: API is kind of shity, should not use as result the offending local I'm not using it
-      sensibleVariable = getFakeLocal();
-    }
+    this.isSensible = isSensible(valueForParameter);
   }
 
-  private Optional<Local> getFakeLocal() {
-    return Optional.of(new JimpleLocal("fake", new IntType(null)));
-  }
 }

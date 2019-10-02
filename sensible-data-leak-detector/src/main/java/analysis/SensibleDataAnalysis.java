@@ -87,8 +87,9 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
                              Map<String, SensibilityLattice> out) {
     if (unit instanceof DefinitionStmt) {
       DefinitionStmt definition = (DefinitionStmt) unit;
-      new ContainsSensibleVariableVisitor(in, methodParams).visit(definition.getRightOp()).done()
-          .ifPresent(sensibleLocalUsed -> markNewSensibleLocal(in, resolveAssigneeName(definition.getLeftOp())));
+      if (new ContainsSensibleVariableVisitor(in, methodParams).visit(definition.getRightOp()).done()) {
+        markNewSensibleLocal(in, resolveAssigneeName(definition.getLeftOp()));
+      }
     } else if (unit instanceof InvokeStmt) {
       InvokeExpr invokeExpr = ((InvokeStmt) unit).getInvokeExpr();
       SootMethod invokedMethod = invokeExpr.getMethod();
@@ -109,7 +110,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         // This method is offending, if it has a sensible variable, WARN
         LOGGER.debug("Just found offending method call");
         invokeExpr.getArgs().stream()
-            .filter(argument -> new ContainsSensibleVariableVisitor(in).visit(argument).done().isPresent())
+            .filter(argument -> new ContainsSensibleVariableVisitor(in).visit(argument).done())
             .findFirst()
             .ifPresent(sensibleArgument -> {
               LOGGER.debug("Local variable named {} is being leaked", sensibleArgument);
@@ -127,7 +128,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
       }
     } else if (unit instanceof ReturnStmt) {
       ReturnStmt ret = (ReturnStmt) unit;
-      returningSensibleValue = new ContainsSensibleVariableVisitor(in).visit(ret.getOp()).done().isPresent();
+      returningSensibleValue = new ContainsSensibleVariableVisitor(in).visit(ret.getOp()).done();
     }
     out.clear();
     out.putAll(in);
