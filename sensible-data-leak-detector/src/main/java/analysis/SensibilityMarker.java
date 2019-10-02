@@ -6,4 +6,7 @@ public class SensibilityMarker {
     // Do nothing.
   }
 
+  public static void sanitize(Object someObject) {
+    // Do nothing.
+  }
 }

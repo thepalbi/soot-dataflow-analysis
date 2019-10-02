@@ -3,6 +3,7 @@ package soot.sensibility;
 import static analysis.SensibleDataWarningsYeller.getLineNumberFromUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
 
 import java.util.LinkedList;
@@ -14,7 +15,6 @@ import analysis.SensibleDataWarningsYeller;
 import org.junit.Before;
 import org.junit.Test;
 import soot.Body;
-import soot.PackManager;
 import soot.Unit;
 import soot.testing.SootTestCase;
 
@@ -59,7 +59,6 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
   @Test
   public void printLnOnCalledMethod() {
     runSootForTargetClass("soot.PrintOnCalledMethod");
-    PackManager.v().writeOutput();
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(11)));
@@ -79,5 +78,11 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(14)));
+  }
+
+  @Test
+  public void sensibleVariableIsNotLeakedAfterSanitize() {
+    runSootForTargetClass("soot.SanitizationAvoidLeaks");
+    assertThat(offendingLines, empty());
   }
 }
