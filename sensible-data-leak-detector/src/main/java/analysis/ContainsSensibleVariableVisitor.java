@@ -60,6 +60,11 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Option
           .isReturningSensibleValue()) {
         sensibleVariable = getFakeLocal();
       }
+    } else {
+      sensibleVariable = invokeExpr.getArgs().stream()
+          .filter(value -> this.cloneVisitor().visit(value).done().isPresent())
+          .map(value -> (Local) value)
+          .findFirst();
     }
   }
 
