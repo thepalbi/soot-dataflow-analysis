@@ -5,29 +5,17 @@ import static analysis.abstraction.SensibilityLattice.HIGH;
 import static analysis.abstraction.SensibilityLattice.supremeBetween;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-
 import analysis.abstraction.SensibilityLattice;
-import javafx.util.Pair;
+import org.slf4j.Logger;
 import soot.Body;
 import soot.Local;
-import soot.SootMethod;
 import soot.Unit;
-import soot.Value;
-import soot.jimple.DefinitionStmt;
-import soot.jimple.InvokeExpr;
-import soot.jimple.InvokeStmt;
-import soot.jimple.ReturnStmt;
+import soot.jimple.Stmt;
 import soot.toolkits.graph.ExceptionalUnitGraph;
 import soot.toolkits.scalar.ForwardFlowAnalysis;
 
@@ -46,7 +34,6 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   private Map<String, SensibilityLattice> startingLocalsMap;
   private Map<Unit, Boolean> possibleLeakInUnit;
   private final Map<Integer, SensibilityLattice> methodParams;
-  private Set<String> offendingMethod;
   private boolean returningSensibleValue = false;
 
   public static SensibleDataAnalysis forBody(Body body) {
@@ -67,9 +54,6 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   public SensibleDataAnalysis(ExceptionalUnitGraph graph, Map<Integer, SensibilityLattice> methodParams) {
     super(graph);
 
-    offendingMethod = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-                                                                              "println", "print")));
-
     startingLocalsMap = new HashMap<>();
     possibleLeakInUnit = new HashMap<>();
     this.methodParams = methodParams;
@@ -85,74 +69,15 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   @Override
   protected void flowThrough(Map<String, SensibilityLattice> in, Unit unit,
                              Map<String, SensibilityLattice> out) {
-    if (unit instanceof DefinitionStmt) {
-      DefinitionStmt definition = (DefinitionStmt) unit;
-      if (new ContainsSensibleVariableVisitor(in, methodParams).visit(definition.getRightOp()).done()) {
-        markNewSensibleLocal(in, resolveAssigneeName(definition.getLeftOp()));
-      }
-    } else if (unit instanceof InvokeStmt) {
-      InvokeExpr invokeExpr = ((InvokeStmt) unit).getInvokeExpr();
-      SootMethod invokedMethod = invokeExpr.getMethod();
-      if (invokedMethodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "markAsSensible")) {
-        // Marking the argument as sensible, if it's a local
-        assert invokeExpr.getArgCount() == 1;
-        Value argument = invokeExpr.getArg(0);
-        if (argument instanceof Local) {
-          markNewSensibleLocal(in, ((Local) argument).getName());
-        }
-      } else if (invokedMethodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "sanitize")) {
-        assert invokeExpr.getArgCount() == 1;
-        Value argument = invokeExpr.getArg(0);
-        if (argument instanceof Local) {
-          in.put(resolveAssigneeName(argument), BOTTOM);
-        }
-      } else if (offendingMethod.contains(invokedMethod.getName())) {
-        // This method is offending, if it has a sensible variable, WARN
-        LOGGER.debug("Just found offending method call");
-        invokeExpr.getArgs().stream()
-            .filter(argument -> new ContainsSensibleVariableVisitor(in).visit(argument).done())
-            .findFirst()
-            .ifPresent(sensibleArgument -> {
-              LOGGER.debug("Local variable named {} is being leaked", sensibleArgument);
-              possibleLeakInUnit.put(unit, true);
-            });
-      } else if (invokedMethod.getDeclaringClass().getPackageName().equals("soot")) {
-        // Maybe this method leaks some sensible variable. Run analysis on method
-        // Collect params sensibility
-        Map<Integer, SensibilityLattice> paramsSensibility = getArgumentSensibilityFor(in, invokeExpr);
-        SensibleDataAnalysis calledMethodAnalysis =
-            SensibleDataAnalysis.forBodyAndParams(invokedMethod.getActiveBody(), paramsSensibility);
-        if (!calledMethodAnalysis.getOffendingUnits().isEmpty()) {
-          possibleLeakInUnit.put(unit, true);
-        }
-      }
-    } else if (unit instanceof ReturnStmt) {
-      ReturnStmt ret = (ReturnStmt) unit;
-      returningSensibleValue = new ContainsSensibleVariableVisitor(in).visit(ret.getOp()).done();
-    }
+
+    StatementVisitor visitor = new StatementVisitor(in, methodParams).visit((Stmt) unit);
+
+    possibleLeakInUnit.put(unit, visitor.getDoesStatementLeak());
+    // Since a return statement is last in the CFG, it's not needed to prevent overwrites
+    returningSensibleValue = visitor.getReturningSensibleValue();
+
     out.clear();
     out.putAll(in);
-  }
-
-  private boolean invokedMethodIdentifiedBy(SootMethod method, String fullClassName, String methodName) {
-    return method.getDeclaringClass().getName().equals(fullClassName) &&
-        method.getName().equals(methodName);
-  }
-
-  private String resolveAssigneeName(Value assignee) {
-    return AssigneeNameExtractor.from(assignee);
-  }
-
-  public static Map<Integer, SensibilityLattice> getArgumentSensibilityFor(Map<String, SensibilityLattice> in,
-                                                                           InvokeExpr invokeExpr) {
-    AtomicInteger index = new AtomicInteger(0);
-    return invokeExpr.getArgs().stream()
-        .map(value -> new Pair<>(index.getAndIncrement(), value))
-        .filter(paramPair -> paramPair.getValue() instanceof Local)
-        .map(paramPair -> new Pair<>(paramPair.getKey(),
-                                     in.getOrDefault(((Local) paramPair.getValue()).getName(),
-                                                     BOTTOM)))
-        .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getValue()));
   }
 
   private void markNewSensibleLocal(Map<String, SensibilityLattice> in, String localName) {

@@ -1,6 +1,6 @@
 package analysis;
 
-import static analysis.SensibleDataAnalysis.getArgumentSensibilityFor;
+import static analysis.StatementVisitor.getArgumentSensibilityFor;
 import static analysis.abstraction.SensibilityLattice.BOTTOM;
 import static analysis.abstraction.SensibilityLattice.isSensible;
 
@@ -16,7 +16,7 @@ import soot.jimple.ParameterRef;
 
 /**
  * {@link dataflow.utils.ValueVisitor} that checks whether a {@link soot.Value} is sensible accordin to the method arguments, or
- * the locals sensiblity level.
+ * the locals sensibility level.
  */
 public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolean> {
 
@@ -56,7 +56,7 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
     if (invokeExpr.getMethod().getDeclaringClass().getPackageName().equals("soot")) {
       // Method defined in same package as main class
       if (SensibleDataAnalysis.forBodyAndParams(invokeExpr.getMethod().getActiveBody(),
-                                                getArgumentSensibilityFor(localSensibilityLevel, invokeExpr))
+                                                getArgumentSensibilityFor(localSensibilityLevel, invokeExpr.getArgs()))
           .isReturningSensibleValue()) {
         isSensible = true;
       }
