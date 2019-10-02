@@ -88,7 +88,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
     if (unit instanceof DefinitionStmt) {
       DefinitionStmt definition = (DefinitionStmt) unit;
       new ContainsSensibleVariableVisitor(in, methodParams).visit(definition.getRightOp()).done()
-          .ifPresent(sensibleLocalUsed -> markNewSensibleLocal(in, (Local) definition.getLeftOp()));
+          .ifPresent(sensibleLocalUsed -> markNewSensibleLocal(in, resolveAssigneeName(definition.getLeftOp())));
     } else if (unit instanceof InvokeStmt) {
       InvokeExpr invokeExpr = ((InvokeStmt) unit).getInvokeExpr();
       SootMethod invokedMethod = invokeExpr.getMethod();
@@ -98,7 +98,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         assert invokeExpr.getArgCount() == 1;
         Value argument = invokeExpr.getArg(0);
         if (argument instanceof Local) {
-          markNewSensibleLocal(in, (Local) argument);
+          markNewSensibleLocal(in, ((Local) argument).getName());
         }
       } else if (offendingMethod.contains(invokedMethod.getName())) {
         // This method is offending, if it has a sensible variable, WARN
@@ -128,6 +128,10 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
     out.putAll(in);
   }
 
+  private String resolveAssigneeName(Value assignee) {
+    return AssigneeNameExtractor.from(assignee);
+  }
+
   public static Map<Integer, SensibilityLattice> getArgumentSensibilityFor(Map<String, SensibilityLattice> in,
                                                                            InvokeExpr invokeExpr) {
     AtomicInteger index = new AtomicInteger(0);
@@ -140,10 +144,9 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getValue()));
   }
 
-  private void markNewSensibleLocal(Map<String, SensibilityLattice> in, Local argument) {
-    Local sensibleLocal = argument;
-    LOGGER.debug("Just discovered a sensible variable named {}", sensibleLocal.getName());
-    in.put(sensibleLocal.getName(), HIGH);
+  private void markNewSensibleLocal(Map<String, SensibilityLattice> in, String localName) {
+    LOGGER.debug("Just discovered a sensible variable named {}", localName);
+    in.put(localName, HIGH);
   }
 
   public boolean possibleLeakInUnit(Unit unit) {

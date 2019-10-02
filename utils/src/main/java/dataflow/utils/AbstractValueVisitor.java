@@ -4,6 +4,7 @@ import dataflow.errors.VisitorNotImplementedForType;
 import soot.Local;
 import soot.Value;
 import soot.jimple.AddExpr;
+import soot.jimple.ArrayRef;
 import soot.jimple.BinopExpr;
 import soot.jimple.DivExpr;
 import soot.jimple.InstanceInvokeExpr;
@@ -34,6 +35,8 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
       visitInvokeExpr((InvokeExpr) value);
     } else if (value instanceof ParameterRef) {
       visitParameterRef((ParameterRef) value);
+    } else if (value instanceof ArrayRef) {
+      visitArrayRef((ArrayRef) value);
     }
     return this;
   }
@@ -74,4 +77,6 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
   protected void visitInstanceInvokeExp(InstanceInvokeExpr instanceInvokeExpr) {}
 
   protected void visitParameterRef(ParameterRef parameter) {}
+
+  protected void visitArrayRef(ArrayRef ref) {}
 }
