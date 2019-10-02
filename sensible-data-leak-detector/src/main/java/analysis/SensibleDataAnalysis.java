@@ -92,13 +92,18 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
     } else if (unit instanceof InvokeStmt) {
       InvokeExpr invokeExpr = ((InvokeStmt) unit).getInvokeExpr();
       SootMethod invokedMethod = invokeExpr.getMethod();
-      if (invokedMethod.getDeclaringClass().getName().equals("analysis.SensibilityMarker") &&
-          invokedMethod.getName().equals("markAsSensible")) {
+      if (invokedMethodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "markAsSensible")) {
         // Marking the argument as sensible, if it's a local
         assert invokeExpr.getArgCount() == 1;
         Value argument = invokeExpr.getArg(0);
         if (argument instanceof Local) {
           markNewSensibleLocal(in, ((Local) argument).getName());
+        }
+      } else if (invokedMethodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "sanitize")) {
+        assert invokeExpr.getArgCount() == 1;
+        Value argument = invokeExpr.getArg(0);
+        if (argument instanceof Local) {
+          in.put(resolveAssigneeName(argument), BOTTOM);
         }
       } else if (offendingMethod.contains(invokedMethod.getName())) {
         // This method is offending, if it has a sensible variable, WARN
@@ -126,6 +131,11 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
     }
     out.clear();
     out.putAll(in);
+  }
+
+  private boolean invokedMethodIdentifiedBy(SootMethod method, String fullClassName, String methodName) {
+    return method.getDeclaringClass().getName().equals(fullClassName) &&
+        method.getName().equals(methodName);
   }
 
   private String resolveAssigneeName(Value assignee) {
