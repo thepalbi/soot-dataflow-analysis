@@ -7,11 +7,8 @@ import static analysis.abstraction.SensibilityLattice.NOT_SENSIBLE;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -33,9 +30,6 @@ import soot.jimple.Stmt;
  * Visitor for extracting from {@link Stmt} whether or not a sensible value is leaked.
  */
 public class StatementVisitor {
-
-  private Set<String> offendingMethod = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-                                                                                                "println", "print")));
 
   // TODO: Change to immutable list
   private final List<InvokeFunction> invokeFunctions = Arrays.asList(
@@ -174,9 +168,11 @@ public class StatementVisitor {
 
   private class OffenderInvokeFun implements InvokeFunction {
 
+    public OffenderInvokeFun() {}
+
     @Override
     public boolean applies(SootMethod method) {
-      return offendingMethod.contains(method.getName());
+      return new OffendingMethodPredicate().test(method);
     }
 
     @Override

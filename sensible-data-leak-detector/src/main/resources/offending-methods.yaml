@@ -1,0 +1,7 @@
+# Offending methods
+-
+  class: java.io.PrintStream
+  method: println
+-
+  class: java.io.PrintStream
+  method: print
