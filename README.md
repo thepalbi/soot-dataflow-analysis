@@ -38,6 +38,8 @@ Phase name: **jtp.SensibleData**
 Evaluates whether a sensible value, marked by the `SensibilityMarker.markAsSensible` method, is leaked by
 some offending method.
 
+The offending methods are read from a config file named `offending-methods.yaml`.
+
 
 ### Other modules
 There are some other modules inside this repository, for example:
