@@ -1,6 +1,6 @@
 import static analysis.abstraction.SensibilityLattice.BOTTOM;
 import static analysis.abstraction.SensibilityLattice.HIGH;
-import static analysis.abstraction.SensibilityLattice.LOW;
+import static analysis.abstraction.SensibilityLattice.NOT_SENSIBLE;
 import static analysis.abstraction.SensibilityLattice.MAYBE_SENSIBLE;
 import static analysis.abstraction.SensibilityLattice.supremeBetween;
 import static org.hamcrest.CoreMatchers.is;
@@ -25,10 +25,10 @@ public class SensibilityLatticeTest {
   @Parameterized.Parameters(name = "{3}")
   public static List<Object[]> data() {
     return Arrays.asList(new Object[][] {
-        {LOW, HIGH, MAYBE_SENSIBLE, "top is returned on same level sensibilites"},
-        {LOW, LOW, LOW, "supreme of equal values"},
-        {LOW, MAYBE_SENSIBLE, MAYBE_SENSIBLE, "top acts as sink"},
-        {LOW, BOTTOM, LOW, "bottom acts as neuter"},
+        {NOT_SENSIBLE, HIGH, MAYBE_SENSIBLE, "top is returned on same level sensibilites"},
+        {NOT_SENSIBLE, NOT_SENSIBLE, NOT_SENSIBLE, "supreme of equal values"},
+        {NOT_SENSIBLE, MAYBE_SENSIBLE, MAYBE_SENSIBLE, "top acts as sink"},
+        {NOT_SENSIBLE, BOTTOM, NOT_SENSIBLE, "bottom acts as neuter"},
     });
   }
 
