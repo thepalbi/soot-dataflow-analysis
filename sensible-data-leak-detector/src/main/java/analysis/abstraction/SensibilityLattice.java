@@ -3,7 +3,7 @@ package analysis.abstraction;
 import javafx.util.Pair;
 
 public enum SensibilityLattice {
-  BOTTOM(0, 0), LOW(1, 0), HIGH(1, 1), MAYBE_SENSIBLE(3, 0);
+  BOTTOM(0, 0), NOT_SENSIBLE(1, 0), HIGH(1, 1), MAYBE_SENSIBLE(3, 0);
 
   private final ComparablePair priority;
 

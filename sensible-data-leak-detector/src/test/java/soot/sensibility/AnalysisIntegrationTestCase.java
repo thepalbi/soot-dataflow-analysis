@@ -85,4 +85,28 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
     runSootForTargetClass("soot.SanitizationAvoidLeaks");
     assertThat(offendingLines, empty());
   }
+
+  @Test
+  public void afterSanitizingInOneBranchLeakIsDetected() {
+    runSootForTargetClass("soot.SanitizeInOneIfBranch");
+    assertThat(offendingLines.size(), is(1));
+    // Note that the offending method is the method call itself
+    assertThat(offendingLines, contains(is(17)));
+  }
+
+  @Test
+  public void leakOnBothIfBranchesIsDetected() {
+    runSootForTargetClass("soot.LeakOnBothIfBranches");
+    assertThat(offendingLines.size(), is(2));
+    // Note that the offending method is the method call itself
+    assertThat(offendingLines, contains(is(12), is(14)));
+  }
+
+  @Test
+  public void afterMarkingAsSensibleInOneIfBranchLeadsToLeak() {
+    runSootForTargetClass("soot.SensibleInOneIfBranch");
+    assertThat(offendingLines.size(), is(1));
+    // Note that the offending method is the method call itself
+    assertThat(offendingLines, contains(is(17)));
+  }
 }

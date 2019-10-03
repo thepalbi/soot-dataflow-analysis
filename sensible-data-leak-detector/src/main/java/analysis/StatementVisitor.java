@@ -3,6 +3,7 @@ package analysis;
 
 import static analysis.abstraction.SensibilityLattice.BOTTOM;
 import static analysis.abstraction.SensibilityLattice.HIGH;
+import static analysis.abstraction.SensibilityLattice.NOT_SENSIBLE;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Arrays;
@@ -85,9 +86,9 @@ public class StatementVisitor {
   }
 
   private void visitDefinition(Value assignee, Value value) {
-    if (new ContainsSensibleVariableVisitor(localsSensibility, params, mainClass).visit(value).done()) {
-      localsSensibility.put(new AssigneeNameExtractor().visit(assignee).done(), HIGH);
-    }
+    SensibilityLattice resolvedLevel =
+        new ContainsSensibleVariableVisitor(localsSensibility, params, mainClass).visit(value).done() ? HIGH : NOT_SENSIBLE;
+    localsSensibility.put(new AssigneeNameExtractor().visit(assignee).done(), resolvedLevel);
   }
 
   public static boolean someValueApplies(List<Value> values, ValueVisitor<Boolean> booleanValueVisitor) {
@@ -146,7 +147,7 @@ public class StatementVisitor {
     @Override
     public void accept(SootMethod method, List<Value> arguments) {
       assert arguments.size() == 1;
-      localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), BOTTOM);
+      localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), NOT_SENSIBLE);
     }
   }
 
