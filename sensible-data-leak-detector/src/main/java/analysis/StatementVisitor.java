@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import analysis.abstraction.InvokeFunction;
 import analysis.abstraction.SensibilityLattice;
 import dataflow.utils.ValueVisitor;
-import javafx.util.Pair;
+import heros.solver.Pair;
 import org.slf4j.Logger;
 import soot.Local;
 import soot.SootClass;
@@ -102,11 +102,11 @@ public class StatementVisitor {
     AtomicInteger index = new AtomicInteger(0);
     return arguments.stream()
         .map(value -> new Pair<>(index.getAndIncrement(), value))
-        .filter(paramPair -> paramPair.getValue() instanceof Local)
-        .map(paramPair -> new Pair<>(paramPair.getKey(),
-                                     locals.getOrDefault(((Local) paramPair.getValue()).getName(),
+        .filter(paramPair -> paramPair.getO2() instanceof Local)
+        .map(paramPair -> new Pair<>(paramPair.getO1(),
+                                     locals.getOrDefault(((Local) paramPair.getO2()).getName(),
                                                          BOTTOM)))
-        .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getValue()));
+        .collect(Collectors.toMap(pair -> pair.getO1(), pair -> pair.getO2()));
   }
 
   public Boolean getReturningSensibleValue() {

@@ -1,6 +1,6 @@
 package analysis.abstraction;
 
-import javafx.util.Pair;
+import heros.solver.Pair;
 
 public enum SensibilityLattice {
   BOTTOM(0, 0), NOT_SENSIBLE(1, 0), HIGH(1, 1), MAYBE_SENSIBLE(3, 0);
@@ -18,7 +18,7 @@ public enum SensibilityLattice {
   public static SensibilityLattice supremeBetween(SensibilityLattice v1, SensibilityLattice v2) {
     if (v1.equals(v2)) {
       return v1;
-    } else if (v1.priority.getKey().equals(v2.priority.getKey())) {
+    } else if (v1.priority.getO1().equals(v2.priority.getO1())) {
       return MAYBE_SENSIBLE;
     } else {
       return v1.compareTo(v2) == 1 ? v1 : v2;
@@ -48,11 +48,11 @@ public enum SensibilityLattice {
     @Override
     public int compareTo(Object o) {
       ComparablePair otherAsPair = (ComparablePair) o;
-      if (this.getKey().equals(otherAsPair.getKey()) &&
-          this.getValue().equals(otherAsPair.getValue())) {
+      if (this.getO1().equals(otherAsPair.getO1()) &&
+          this.getO2().equals(otherAsPair.getO2())) {
         return 0;
-      } else if (this.getKey() < otherAsPair.getKey() ||
-          this.getValue() < otherAsPair.getValue()) {
+      } else if (this.getO1() < otherAsPair.getO1() ||
+          this.getO2() < otherAsPair.getO2()) {
         return -1;
       } else {
         return 1;
