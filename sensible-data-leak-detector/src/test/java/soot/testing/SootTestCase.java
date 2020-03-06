@@ -39,12 +39,15 @@ public abstract class SootTestCase {
       }
     }));
 
+    // This should be the path to the test-classes directory
+    String pathToRunningTestJar = SootTestCase.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+    String pathToTargetClasses = pathToRunningTestJar.replace("test-classes", "classes");
+
     // Set as classpath both test and src classes
     // TODO: This should be non-absolute
     Options.v()
         .set_soot_classpath(
-                            "/Users/pbalbi/Facultad/aap/repo/sensible-data-leak-detector/target/test-classes:" +
-                                "/Users/pbalbi/Facultad/aap/repo/sensible-data-leak-detector/target/classes");
+                            pathToRunningTestJar + ":" + pathToTargetClasses);
     // Use default JVM rt.jar
     Options.v().set_prepend_classpath(true);
     // Print tags in produced jimple
