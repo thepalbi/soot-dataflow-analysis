@@ -44,7 +44,6 @@ public abstract class SootTestCase {
     String pathToTargetClasses = pathToRunningTestJar.replace("test-classes", "classes");
 
     // Set as classpath both test and src classes
-    // TODO: This should be non-absolute
     Options.v()
         .set_soot_classpath(
                             pathToRunningTestJar + ":" + pathToTargetClasses);

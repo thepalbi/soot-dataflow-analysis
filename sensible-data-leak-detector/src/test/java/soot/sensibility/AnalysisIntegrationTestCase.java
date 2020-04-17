@@ -1,9 +1,8 @@
 package soot.sensibility;
 
+import static org.hamcrest.Matchers.*;
 import static soot.UnitUtils.getLineNumberFromUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.Is.is;
 
 import java.util.LinkedList;
@@ -108,5 +107,11 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(17)));
+  }
+
+  @Test
+  public void interfaceHandlingOnMethodInvokations() {
+    runSootForTargetClass("soot.TestPointsToWithoutAnalysis");
+    assertThat(offendingLines, empty());
   }
 }
