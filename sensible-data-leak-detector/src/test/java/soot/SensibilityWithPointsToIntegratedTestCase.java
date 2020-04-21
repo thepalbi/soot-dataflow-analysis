@@ -20,7 +20,7 @@ public class SensibilityWithPointsToIntegratedTestCase {
     private List<Integer> offendingLines = new LinkedList<>();
 
     @Test
-    public void test() throws Exception {
+    public void findLeakWhenImplementationPrintsSensibleValue() throws Exception {
         configureCommonSootOptions();
 
         // First do a run, and calculate points to
@@ -67,6 +67,56 @@ public class SensibilityWithPointsToIntegratedTestCase {
         PackManager.v().runPacks();
         // System.out.println(offendingLines);
         assertThat(offendingLines, hasSize(1));
+    }
+
+    @Test
+    public void noLeakFoundWithDummyImplementation() throws Exception {
+        configureCommonSootOptions();
+
+        // First do a run, and calculate points to
+        Scene.v().loadNecessaryClasses();
+        PackManager.v().runBodyPacks();
+        List<Body> targetBodies = Scene.v().getClasses().stream()
+                .filter(sootClass -> sootClass.getPackageName().startsWith("wtf.thepalbi") && !sootClass.isInterface())
+                .flatMap(sootClass -> sootClass.getMethods().stream())
+                .map(method -> method.getActiveBody())
+                .collect(Collectors.toList());
+        PointsToResult result = new PointToAnalysis().run(
+                targetBodies,
+                Scene.v().getSootClass("wtf.thepalbi.TestPointsToWithoutAnalysisNotLeaking").getMethodByName("main").getActiveBody(),
+                Scene.v());
+        this.pointsTo = result;
+
+        // Reset soot
+        G.reset();
+
+        configureCommonSootOptions();
+        // Register all user transformations
+        PackManager.v().getPack("jtp").add(new Transform("jtp.test", new BodyTransformer() {
+
+            @Override
+            protected void internalTransform(Body body, String s, Map<String, String> map) {
+                // Just run analysis for target class
+                if (!body.getMethod().getDeclaringClass().getName().equals("wtf.thepalbi.TestPointsToWithoutAnalysisNotLeaking")) {
+                    return;
+                }
+
+                // Setup sensibility analysis
+                SensibleDataAnalysis sensibilityAnalysis = SensibleDataAnalysis.forBodyAndParams(body, new HashMap<>(), pointsTo);
+                // Collect "leaking" lines
+                for (Unit unit : body.getUnits()) {
+                    if (sensibilityAnalysis.possibleLeakInUnit(unit)) {
+                        offendingLines.add(getLineNumberFromUnit(unit));
+                    }
+                }
+            }
+        }));
+
+        // Turn on tested phase
+        Scene.v().loadNecessaryClasses();
+        PackManager.v().runPacks();
+        // System.out.println(offendingLines);
+        assertThat(offendingLines, empty());
     }
 
     private void configureCommonSootOptions() {

@@ -6,6 +6,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 import analysis.abstraction.SensibilityLattice;
@@ -105,7 +106,11 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
   }
 
   public boolean noLeaksDetected() {
-    return possibleLeakInUnit.isEmpty();
+    // TODO: Change this. Its horrible
+    return
+            possibleLeakInUnit.isEmpty() ||
+            !possibleLeakInUnit.values().stream()
+              .reduce(false, (aBoolean, aBoolean2) -> aBoolean || aBoolean2);
   }
 
   @Override

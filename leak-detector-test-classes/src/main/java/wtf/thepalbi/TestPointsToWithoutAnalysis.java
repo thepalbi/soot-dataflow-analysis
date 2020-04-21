@@ -12,6 +12,16 @@ public class TestPointsToWithoutAnalysis {
     }
 }
 
+class TestPointsToWithoutAnalysisNotLeaking {
+    public static void main(String[] args) {
+        String sensibleData = "holis";
+        sensibleData = sensibleData.replace("i", "u");
+        SensibilityMarker.markAsSensible(sensibleData);
+        SomeInterface someLeaker = new NotALeaker();
+        someLeaker.leakOrNotLeak(sensibleData);
+    }
+}
+
 class NotALeaker implements SomeInterface {
     @Override
     public void leakOrNotLeak(String sensibleData) {
