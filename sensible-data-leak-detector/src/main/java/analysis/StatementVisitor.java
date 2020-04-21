@@ -1,17 +1,6 @@
 package analysis;
 
 
-import static analysis.abstraction.SensibilityLattice.BOTTOM;
-import static analysis.abstraction.SensibilityLattice.HIGH;
-import static analysis.abstraction.SensibilityLattice.NOT_SENSIBLE;
-import static org.slf4j.LoggerFactory.getLogger;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
 import analysis.abstraction.InvokeFunction;
 import analysis.abstraction.SensibilityLattice;
 import dataflow.utils.ValueVisitor;
@@ -21,6 +10,15 @@ import soot.*;
 import soot.jimple.*;
 import wtf.thepalbi.HeapObject;
 import wtf.thepalbi.PointsToResult;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static analysis.abstraction.SensibilityLattice.*;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Visitor for extracting from {@link Stmt} whether or not a sensible value is leaked.
@@ -194,13 +192,13 @@ public class StatementVisitor {
 
         @Override
         public void accept(InvokeStmt invocation, SootMethod method, List<Value> arguments) {
-            InterfaceInvokeExpr invokeExpr = (InterfaceInvokeExpr)invocation.getInvokeExpr();
+            InterfaceInvokeExpr invokeExpr = (InterfaceInvokeExpr) invocation.getInvokeExpr();
             // Maybe this method leaks some sensible variable. Run analysis on method
             // Collect params sensibility
             Map<Integer, SensibilityLattice> paramsSensibility = getArgumentSensibilityFor(localsSensibility, arguments);
 
             // Resolve method body with points-to information
-            List<HeapObject> heapObjects = pointsTo.localPointsTo(inMethod, ((Local)invokeExpr.getBase()).getName());
+            List<HeapObject> heapObjects = pointsTo.localPointsTo(inMethod, ((Local) invokeExpr.getBase()).getName());
             String firstPointedObjectType = heapObjects.get(0).getType();
             SootMethod resolvedMethod = Scene.v().getSootClass(firstPointedObjectType).getMethod(method.getSubSignature());
 

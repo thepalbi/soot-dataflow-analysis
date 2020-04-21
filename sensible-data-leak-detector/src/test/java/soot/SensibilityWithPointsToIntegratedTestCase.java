@@ -3,7 +3,6 @@ package soot;
 import analysis.SensibleDataAnalysis;
 import org.junit.Test;
 import soot.options.Options;
-import sun.security.krb5.SCDynamicStoreConfig;
 import wtf.thepalbi.PointToAnalysis;
 import wtf.thepalbi.PointsToResult;
 

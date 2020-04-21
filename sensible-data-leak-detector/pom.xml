@@ -9,7 +9,7 @@
         <artifactId>parent-pom</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    
+
     <groupId>app</groupId>
     <artifactId>sensible-data-leak-detector</artifactId>
     <version>1.0-SNAPSHOT</version>

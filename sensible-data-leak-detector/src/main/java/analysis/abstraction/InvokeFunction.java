@@ -1,13 +1,12 @@
 package analysis.abstraction;
 
-import java.util.List;
-import java.util.function.BiConsumer;
-
 import org.apache.logging.log4j.util.TriConsumer;
 import soot.SootMethod;
 import soot.Value;
-import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
+
+import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * A {@link BiConsumer} which represent a function that takes a {@link SootMethod} and an arguments {@link List<Value>},

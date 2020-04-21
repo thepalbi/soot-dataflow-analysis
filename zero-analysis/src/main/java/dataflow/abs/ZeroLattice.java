@@ -5,74 +5,74 @@ package dataflow.abs;
  */
 public enum ZeroLattice {
 
-  BOTTOM("bottom"), NOT_ZERO("not-zero"), ZERO("zero"), MAYBE_ZERO("maybe-zero");
+    BOTTOM("bottom"), NOT_ZERO("not-zero"), ZERO("zero"), MAYBE_ZERO("maybe-zero");
 
-  private String name;
+    private String name;
 
-  @Override
-  public String toString() {
-    return this.name;
-  }
-
-  ZeroLattice(String name) {
-    this.name = name;
-  }
-
-  public ZeroLattice add(ZeroLattice another) {
-    if (this.equals(NOT_ZERO) || another.equals(NOT_ZERO)) {
-      return NOT_ZERO;
-      // Neither is NOT_ZERO
-    } else if (this.equals(MAYBE_ZERO) || another.equals(MAYBE_ZERO)) {
-      return MAYBE_ZERO;
-      // Neither is MAYBE_ZERO or NOT_ZERO
-    } else {
-      return ZERO;
+    @Override
+    public String toString() {
+        return this.name;
     }
-  }
 
-  public ZeroLattice divideBy(ZeroLattice another) {
-    if (another.equals(ZERO) || another.equals(MAYBE_ZERO)) {
-      return MAYBE_ZERO;
-      // another must be NOT_ZERO
-    } else {
-      return this;
+    ZeroLattice(String name) {
+        this.name = name;
     }
-  }
 
-  public ZeroLattice multiplyBy(ZeroLattice another) {
-    if (this.equals(ZERO) || another.equals(ZERO)) {
-      return ZERO;
-    } else if (this.equals(MAYBE_ZERO) || another.equals(MAYBE_ZERO)) {
-      return MAYBE_ZERO;
-    } else {
-      return NOT_ZERO;
+    public ZeroLattice add(ZeroLattice another) {
+        if (this.equals(NOT_ZERO) || another.equals(NOT_ZERO)) {
+            return NOT_ZERO;
+            // Neither is NOT_ZERO
+        } else if (this.equals(MAYBE_ZERO) || another.equals(MAYBE_ZERO)) {
+            return MAYBE_ZERO;
+            // Neither is MAYBE_ZERO or NOT_ZERO
+        } else {
+            return ZERO;
+        }
     }
-  }
 
-  public ZeroLattice substract(ZeroLattice another) {
-    if (this.equals(NOT_ZERO) && another.equals(NOT_ZERO)) {
-      return MAYBE_ZERO;
-    } else if ((this.equals(NOT_ZERO) && another.equals(ZERO)) ||
-        (this.equals(ZERO) && another.equals(NOT_ZERO))) {
-      return NOT_ZERO;
-    } else if (this.equals(ZERO) && another.equals(ZERO)) {
-      return ZERO;
-    } else {
-      return MAYBE_ZERO;
+    public ZeroLattice divideBy(ZeroLattice another) {
+        if (another.equals(ZERO) || another.equals(MAYBE_ZERO)) {
+            return MAYBE_ZERO;
+            // another must be NOT_ZERO
+        } else {
+            return this;
+        }
     }
-  }
 
-  public ZeroLattice supreme(ZeroLattice another) {
-    if (this.equals(BOTTOM) && !another.equals(BOTTOM)) {
-      return another;
-    } else if (another.equals(BOTTOM) && !this.equals(BOTTOM)) {
-      return this;
-      // Neither is BOTTOM
-    } else if (this.equals(another)) {
-      return this;
-      // They are different, and not BOTTOM => MAYBE_ZERO
-    } else {
-      return MAYBE_ZERO;
+    public ZeroLattice multiplyBy(ZeroLattice another) {
+        if (this.equals(ZERO) || another.equals(ZERO)) {
+            return ZERO;
+        } else if (this.equals(MAYBE_ZERO) || another.equals(MAYBE_ZERO)) {
+            return MAYBE_ZERO;
+        } else {
+            return NOT_ZERO;
+        }
     }
-  }
+
+    public ZeroLattice substract(ZeroLattice another) {
+        if (this.equals(NOT_ZERO) && another.equals(NOT_ZERO)) {
+            return MAYBE_ZERO;
+        } else if ((this.equals(NOT_ZERO) && another.equals(ZERO)) ||
+                (this.equals(ZERO) && another.equals(NOT_ZERO))) {
+            return NOT_ZERO;
+        } else if (this.equals(ZERO) && another.equals(ZERO)) {
+            return ZERO;
+        } else {
+            return MAYBE_ZERO;
+        }
+    }
+
+    public ZeroLattice supreme(ZeroLattice another) {
+        if (this.equals(BOTTOM) && !another.equals(BOTTOM)) {
+            return another;
+        } else if (another.equals(BOTTOM) && !this.equals(BOTTOM)) {
+            return this;
+            // Neither is BOTTOM
+        } else if (this.equals(another)) {
+            return this;
+            // They are different, and not BOTTOM => MAYBE_ZERO
+        } else {
+            return MAYBE_ZERO;
+        }
+    }
 }
