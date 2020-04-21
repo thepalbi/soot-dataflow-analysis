@@ -1,0 +1,11 @@
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/SensibleInOneIfBranch.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/PrintOnCalledMethod.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/SensibleDataReturnedByUnknownMethod.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/TestPointsToWithoutAnalysis.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/analysis/SensibilityMarker.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/TestMain.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/LeakOnBothIfBranches.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/SimpleInterprocedural.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/SensibleDataReturnedByKnownMethod.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/SanitizationAvoidLeaks.java
+/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/src/main/java/wtf/thepalbi/SanitizeInOneIfBranch.java

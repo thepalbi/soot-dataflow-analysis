@@ -5,6 +5,7 @@ import static soot.UnitUtils.getLineNumberFromUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
   @Override
   @Before
   public void setUp() throws Exception {
-    addTransformToJtpPipeline("jtp.testee", new SensibleDataWarningsYeller());
+    // addTransformToJtpPipeline("jtp.testee", new SensibleDataWarningsYeller());
     offendingLines.clear();
     super.setUp();
   }
@@ -32,7 +33,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
   @Override
   protected void doInternalTransform(Body body, String s, Map<String, String> map) {
     // Setup sensibility analysis
-    SensibleDataAnalysis sensibilityAnalysis = SensibleDataAnalysis.forBody(body);
+    SensibleDataAnalysis sensibilityAnalysis = SensibleDataAnalysis.forBodyAndParams(body, new HashMap<>(), pointsTo);
     // Collect "leaking" lines
     for (Unit unit : body.getUnits()) {
       if (sensibilityAnalysis.possibleLeakInUnit(unit)) {
@@ -43,21 +44,21 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
 
   @Test
   public void simpleOneMethodProgramWithSensiblePrintLn() {
-    runSootForTargetClass("soot.TestMain");
+    runSootForTargetClass("wtf.thepalbi.TestMain");
     assertThat(offendingLines.size(), is(2));
     assertThat(offendingLines, contains(is(11), is(13)));
   }
 
   @Test
   public void printLnOnMainMethod() {
-    runSootForTargetClass("soot.SimpleInterprocedural");
+    runSootForTargetClass("wtf.thepalbi.SimpleInterprocedural");
     assertThat(offendingLines.size(), is(1));
     assertThat(offendingLines, contains(is(12)));
   }
 
   @Test
   public void printLnOnCalledMethod() {
-    runSootForTargetClass("soot.PrintOnCalledMethod");
+    runSootForTargetClass("wtf.thepalbi.PrintOnCalledMethod");
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(11)));
@@ -65,7 +66,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
 
   @Test
   public void sensibleDataReturnedByKnownMethod() {
-    runSootForTargetClass("soot.SensibleDataReturnedByKnownMethod");
+    runSootForTargetClass("wtf.thepalbi.SensibleDataReturnedByKnownMethod");
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(9)));
@@ -73,7 +74,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
 
   @Test
   public void sensibleDataReturnedByUnknownMethod() {
-    runSootForTargetClass("soot.SensibleDataReturnedByUnknownMethod");
+    runSootForTargetClass("wtf.thepalbi.SensibleDataReturnedByUnknownMethod");
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(14)));
@@ -81,13 +82,13 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
 
   @Test
   public void sensibleVariableIsNotLeakedAfterSanitize() {
-    runSootForTargetClass("soot.SanitizationAvoidLeaks");
+    runSootForTargetClass("wtf.thepalbi.SanitizationAvoidLeaks");
     assertThat(offendingLines, empty());
   }
 
   @Test
   public void afterSanitizingInOneBranchLeakIsDetected() {
-    runSootForTargetClass("soot.SanitizeInOneIfBranch");
+    runSootForTargetClass("wtf.thepalbi.SanitizeInOneIfBranch");
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(17)));
@@ -95,7 +96,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
 
   @Test
   public void leakOnBothIfBranchesIsDetected() {
-    runSootForTargetClass("soot.LeakOnBothIfBranches");
+    runSootForTargetClass("wtf.thepalbi.LeakOnBothIfBranches");
     assertThat(offendingLines.size(), is(2));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(12), is(14)));
@@ -103,7 +104,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
 
   @Test
   public void afterMarkingAsSensibleInOneIfBranchLeadsToLeak() {
-    runSootForTargetClass("soot.SensibleInOneIfBranch");
+    runSootForTargetClass("wtf.thepalbi.SensibleInOneIfBranch");
     assertThat(offendingLines.size(), is(1));
     // Note that the offending method is the method call itself
     assertThat(offendingLines, contains(is(17)));
@@ -111,7 +112,7 @@ public class AnalysisIntegrationTestCase extends SootTestCase {
 
   @Test
   public void interfaceHandlingOnMethodInvokations() {
-    runSootForTargetClass("soot.TestPointsToWithoutAnalysis");
+    runSootForTargetClass("wtf.thepalbi.TestPointsToWithoutAnalysis");
     assertThat(offendingLines, empty());
   }
 }

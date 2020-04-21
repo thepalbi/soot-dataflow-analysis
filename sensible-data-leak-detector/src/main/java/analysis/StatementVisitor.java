@@ -17,11 +17,10 @@ import analysis.abstraction.SensibilityLattice;
 import dataflow.utils.ValueVisitor;
 import heros.solver.Pair;
 import org.slf4j.Logger;
-import soot.Local;
-import soot.SootClass;
-import soot.SootMethod;
-import soot.Value;
+import soot.*;
 import soot.jimple.*;
+import wtf.thepalbi.HeapObject;
+import wtf.thepalbi.PointsToResult;
 
 /**
  * Visitor for extracting from {@link Stmt} whether or not a sensible value is leaked.
@@ -40,14 +39,18 @@ public class StatementVisitor {
     private Map<String, SensibilityLattice> localsSensibility;
     private Map<Integer, SensibilityLattice> params;
     private SootClass mainClass;
+    private SootMethod inMethod;
+    private PointsToResult pointsTo;
     private Boolean returningSensibleValue = false;
     private Boolean doesStatementLeak = false;
 
     public StatementVisitor(Map<String, SensibilityLattice> localsSensibility, Map<Integer, SensibilityLattice> params,
-                            SootClass mainClass) {
+                            SootClass mainClass, SootMethod method, PointsToResult pointsTo) {
         this.localsSensibility = localsSensibility;
         this.params = params;
         this.mainClass = mainClass;
+        this.inMethod = method;
+        this.pointsTo = pointsTo;
     }
 
     public StatementVisitor visit(Stmt statement) {
@@ -67,7 +70,7 @@ public class StatementVisitor {
     }
 
     private void visitReturn(Value value) {
-        returningSensibleValue = new ContainsSensibleVariableVisitor(localsSensibility, mainClass).visit(value).done();
+        returningSensibleValue = new ContainsSensibleVariableVisitor(localsSensibility, mainClass, pointsTo).visit(value).done();
     }
 
     private void visitInvoke(InvokeStmt invoke, SootMethod method, List<Value> arguments) {
@@ -79,7 +82,7 @@ public class StatementVisitor {
 
     private void visitDefinition(Value assignee, Value value) {
         SensibilityLattice resolvedLevel =
-                new ContainsSensibleVariableVisitor(localsSensibility, params, mainClass).visit(value).done() ? HIGH : NOT_SENSIBLE;
+                new ContainsSensibleVariableVisitor(localsSensibility, params, mainClass, pointsTo).visit(value).done() ? HIGH : NOT_SENSIBLE;
         localsSensibility.put(new AssigneeNameExtractor().visit(assignee).done(), resolvedLevel);
     }
 
@@ -156,7 +159,7 @@ public class StatementVisitor {
             // Collect params sensibility
             Map<Integer, SensibilityLattice> paramsSensibility = getArgumentSensibilityFor(localsSensibility, arguments);
             SensibleDataAnalysis calledMethodAnalysis =
-                    SensibleDataAnalysis.forBodyAndParams(method.getActiveBody(), paramsSensibility);
+                    SensibleDataAnalysis.forBodyAndParams(method.getActiveBody(), paramsSensibility, pointsTo);
             if (!calledMethodAnalysis.noLeaksDetected()) {
                 doesStatementLeak = true;
             }
@@ -178,7 +181,7 @@ public class StatementVisitor {
         public void accept(InvokeStmt invocation, SootMethod method, List<Value> arguments) {
             // This method is offending, if it has a sensible variable, WARN
             LOGGER.debug("Just found offending method call");
-            doesStatementLeak = someValueApplies(arguments, new ContainsSensibleVariableVisitor(localsSensibility, mainClass));
+            doesStatementLeak = someValueApplies(arguments, new ContainsSensibleVariableVisitor(localsSensibility, mainClass, pointsTo));
         }
     }
 
@@ -191,11 +194,20 @@ public class StatementVisitor {
 
         @Override
         public void accept(InvokeStmt invocation, SootMethod method, List<Value> arguments) {
+            InterfaceInvokeExpr invokeExpr = (InterfaceInvokeExpr)invocation.getInvokeExpr();
             // Maybe this method leaks some sensible variable. Run analysis on method
             // Collect params sensibility
             Map<Integer, SensibilityLattice> paramsSensibility = getArgumentSensibilityFor(localsSensibility, arguments);
+
+            // Resolve method body with points-to information
+            List<HeapObject> heapObjects = pointsTo.localPointsTo(inMethod, ((Local)invokeExpr.getBase()).getName());
+            String firstPointedObjectType = heapObjects.get(0).getType();
+            SootMethod resolvedMethod = Scene.v().getSootClass(firstPointedObjectType).getMethod(method.getSubSignature());
+
+            assert resolvedMethod.hasActiveBody();
+
             SensibleDataAnalysis calledMethodAnalysis =
-                    SensibleDataAnalysis.forBodyAndParams(method.getActiveBody(), paramsSensibility);
+                    SensibleDataAnalysis.forBodyAndParams(resolvedMethod.getActiveBody(), paramsSensibility, pointsTo);
             if (!calledMethodAnalysis.noLeaksDetected()) {
                 doesStatementLeak = true;
             }

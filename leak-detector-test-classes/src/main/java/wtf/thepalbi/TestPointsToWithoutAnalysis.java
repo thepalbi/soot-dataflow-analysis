@@ -1,4 +1,4 @@
-package soot;
+package wtf.thepalbi;
 
 import analysis.SensibilityMarker;
 

@@ -15,6 +15,7 @@ import soot.SootClass;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
 import soot.jimple.ParameterRef;
+import wtf.thepalbi.PointsToResult;
 
 /**
  * {@link dataflow.utils.ValueVisitor} that checks whether a {@link soot.Value} is sensible accordin to the method arguments, or
@@ -26,17 +27,20 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
   private Map<Integer, SensibilityLattice> parametersSensibility;
   private Boolean isSensible;
   private SootClass mainClass;
+  private PointsToResult pointsTo;
 
-  public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel, SootClass mainClass) {
-    this(localsSensibilityLevel, new HashMap<>(), mainClass);
+  public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel, SootClass mainClass, PointsToResult pointsTo) {
+    this(localsSensibilityLevel, new HashMap<>(), mainClass, pointsTo);
   }
 
   public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel,
                                          Map<Integer, SensibilityLattice> parametersSensibility,
-                                         SootClass mainClass) {
+                                         SootClass mainClass,
+                                         PointsToResult pointsTo) {
     this.localSensibilityLevel = localsSensibilityLevel;
     this.parametersSensibility = parametersSensibility;
     this.mainClass = mainClass;
+    this.pointsTo = pointsTo;
     this.isSensible = false;
   }
 
@@ -47,7 +51,7 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
 
   @Override
   public ContainsSensibleVariableVisitor cloneVisitor() {
-    return new ContainsSensibleVariableVisitor(localSensibilityLevel, parametersSensibility, mainClass);
+    return new ContainsSensibleVariableVisitor(localSensibilityLevel, parametersSensibility, mainClass, pointsTo);
   }
 
   @Override
@@ -61,7 +65,7 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
     if (invokeExpr.getMethod().getDeclaringClass().equals(mainClass)) {
       // Method defined in same package as main class
       isSensible = SensibleDataAnalysis.forBodyAndParams(invokeExpr.getMethod().getActiveBody(),
-                                                         getArgumentSensibilityFor(localSensibilityLevel, invokeExpr.getArgs()))
+                                                         getArgumentSensibilityFor(localSensibilityLevel, invokeExpr.getArgs()), pointsTo)
           .isReturningSensibleValue();
     } else {
       isSensible = someValueApplies(invokeExpr.getArgs(), this.cloneVisitor());

@@ -79,5 +79,6 @@
     <module>zero-analysis</module>
     <module>utils</module>
     <module>sensible-data-leak-detector</module>
+    <module>leak-detector-test-classes</module>
   </modules>
 </project>
