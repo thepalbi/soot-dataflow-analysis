@@ -1,6 +1,7 @@
 package soot;
 
 import analysis.SensibleDataAnalysis;
+import org.junit.After;
 import org.junit.Test;
 import soot.options.Options;
 import wtf.thepalbi.PointToAnalysis;
@@ -10,66 +11,101 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
 import static soot.UnitUtils.getLineNumberFromUnit;
 
 public class SensibilityWithPointsToIntegratedTestCase {
     private PointsToResult pointsTo;
     private List<Integer> offendingLines = new LinkedList<>();
 
+    @After
+    public void tearDown() {
+        offendingLines.clear();
+    }
+
     @Test
     public void findLeakWhenImplementationPrintsSensibleValue() throws Exception {
-        configureCommonSootOptions();
-
-        // First do a run, and calculate points to
-        Scene.v().loadNecessaryClasses();
-        PackManager.v().runBodyPacks();
-        List<Body> targetBodies = Scene.v().getClasses().stream()
-                .filter(sootClass -> sootClass.getPackageName().startsWith("wtf.thepalbi") && !sootClass.isInterface())
-                .flatMap(sootClass -> sootClass.getMethods().stream())
-                .map(method -> method.getActiveBody())
-                .collect(Collectors.toList());
-        PointsToResult result = new PointToAnalysis().run(
-                targetBodies,
-                Scene.v().getSootClass("wtf.thepalbi.TestPointsToWithoutAnalysis").getMethodByName("main").getActiveBody(),
-                Scene.v());
-        this.pointsTo = result;
-
-        // Reset soot
-        G.reset();
-
-        configureCommonSootOptions();
-        // Register all user transformations
-        PackManager.v().getPack("jtp").add(new Transform("jtp.test", new BodyTransformer() {
-
-            @Override
-            protected void internalTransform(Body body, String s, Map<String, String> map) {
-                // Just run analysis for target class
-                if (!body.getMethod().getDeclaringClass().getName().equals("wtf.thepalbi.TestPointsToWithoutAnalysis")) {
-                    return;
-                }
-
-                // Setup sensibility analysis
-                SensibleDataAnalysis sensibilityAnalysis = SensibleDataAnalysis.forBodyAndParams(body, new HashMap<>(), pointsTo);
-                // Collect "leaking" lines
-                for (Unit unit : body.getUnits()) {
-                    if (sensibilityAnalysis.possibleLeakInUnit(unit)) {
-                        offendingLines.add(getLineNumberFromUnit(unit));
-                    }
-                }
-            }
-        }));
-
-        // Turn on tested phase
-        Scene.v().loadNecessaryClasses();
-        PackManager.v().runPacks();
-        // System.out.println(offendingLines);
+        runPointsToAndSootForClass("wtf.thepalbi.TestPointsToWithoutAnalysis");
         assertThat(offendingLines, hasSize(1));
     }
 
     @Test
     public void noLeakFoundWithDummyImplementation() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.TestPointsToWithoutAnalysisNotLeaking");
+        // System.out.println(offendingLines);
+        assertThat(offendingLines, empty());
+    }
+
+    @Test
+    public void simpleOneMethodProgramWithSensiblePrintLn() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.TestMain");
+        assertThat(offendingLines.size(), is(2));
+        assertThat(offendingLines, contains(is(11), is(13)));
+    }
+
+    @Test
+    public void printLnOnMainMethod() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.SimpleInterprocedural");
+        assertThat(offendingLines.size(), is(1));
+        assertThat(offendingLines, contains(is(12)));
+    }
+
+    @Test
+    public void printLnOnCalledMethod() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.PrintOnCalledMethod");
+        assertThat(offendingLines.size(), is(1));
+        // Note that the offending method is the method call itself
+        assertThat(offendingLines, contains(is(11)));
+    }
+
+    @Test
+    public void sensibleDataReturnedByKnownMethod() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.SensibleDataReturnedByKnownMethod");
+        assertThat(offendingLines.size(), is(1));
+        // Note that the offending method is the method call itself
+        assertThat(offendingLines, contains(is(9)));
+    }
+
+    @Test
+    public void sensibleDataReturnedByUnknownMethod() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.SensibleDataReturnedByUnknownMethod");
+        assertThat(offendingLines.size(), is(1));
+        // Note that the offending method is the method call itself
+        assertThat(offendingLines, contains(is(14)));
+    }
+
+    @Test
+    public void sensibleVariableIsNotLeakedAfterSanitize() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.SanitizationAvoidLeaks");
+        assertThat(offendingLines, empty());
+    }
+
+    @Test
+    public void afterSanitizingInOneBranchLeakIsDetected() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.SanitizeInOneIfBranch");
+        assertThat(offendingLines.size(), is(1));
+        // Note that the offending method is the method call itself
+        assertThat(offendingLines, contains(is(17)));
+    }
+
+    @Test
+    public void leakOnBothIfBranchesIsDetected() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.LeakOnBothIfBranches");
+        assertThat(offendingLines.size(), is(2));
+        // Note that the offending method is the method call itself
+        assertThat(offendingLines, contains(is(12), is(14)));
+    }
+
+    @Test
+    public void afterMarkingAsSensibleInOneIfBranchLeadsToLeak() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.SensibleInOneIfBranch");
+        assertThat(offendingLines.size(), is(1));
+        // Note that the offending method is the method call itself
+        assertThat(offendingLines, contains(is(17)));
+    }
+   
+    private void runPointsToAndSootForClass(String targetFQClassName) throws Exception {
         configureCommonSootOptions();
 
         // First do a run, and calculate points to
@@ -82,7 +118,8 @@ public class SensibilityWithPointsToIntegratedTestCase {
                 .collect(Collectors.toList());
         PointsToResult result = new PointToAnalysis().run(
                 targetBodies,
-                Scene.v().getSootClass("wtf.thepalbi.TestPointsToWithoutAnalysisNotLeaking").getMethodByName("main").getActiveBody(),
+                // By default, asume a main method in the target class. Expand PointsTo from there out.
+                Scene.v().getSootClass(targetFQClassName).getMethodByName("main").getActiveBody(),
                 Scene.v());
         this.pointsTo = result;
 
@@ -90,13 +127,14 @@ public class SensibilityWithPointsToIntegratedTestCase {
         G.reset();
 
         configureCommonSootOptions();
+
         // Register all user transformations
         PackManager.v().getPack("jtp").add(new Transform("jtp.test", new BodyTransformer() {
 
             @Override
             protected void internalTransform(Body body, String s, Map<String, String> map) {
-                // Just run analysis for target class
-                if (!body.getMethod().getDeclaringClass().getName().equals("wtf.thepalbi.TestPointsToWithoutAnalysisNotLeaking")) {
+                // Just run analysis for target class. If not, this will run for all classes in test-classes module.
+                if (!body.getMethod().getDeclaringClass().getName().equals(targetFQClassName)) {
                     return;
                 }
 
@@ -114,12 +152,11 @@ public class SensibilityWithPointsToIntegratedTestCase {
         // Turn on tested phase
         Scene.v().loadNecessaryClasses();
         PackManager.v().runPacks();
-        // System.out.println(offendingLines);
-        assertThat(offendingLines, empty());
     }
 
     private void configureCommonSootOptions() {
         // Set as classpath both test and src classes
+        // TODO: Extract this path as relative
         Options.v().set_process_dir(Arrays.asList(
                 "/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/target/classes"
         ));
