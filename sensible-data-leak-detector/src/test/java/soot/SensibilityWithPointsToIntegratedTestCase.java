@@ -104,7 +104,7 @@ public class SensibilityWithPointsToIntegratedTestCase {
         // Note that the offending method is the method call itself
         assertThat(offendingLines, contains(is(17)));
     }
-   
+
     private void runPointsToAndSootForClass(String targetFQClassName) throws Exception {
         configureCommonSootOptions();
 
