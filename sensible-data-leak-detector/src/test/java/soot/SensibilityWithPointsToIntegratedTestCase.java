@@ -45,7 +45,7 @@ public class SensibilityWithPointsToIntegratedTestCase {
     }
 
     @Test
-    public void printLnOnMainMethod() throws Exception {
+    public void printLnOnMainMethodAndSensibleDataModifiedInCalledMethod() throws Exception {
         runPointsToAndSootForClass("wtf.thepalbi.SimpleInterprocedural");
         assertThat(offendingLines.size(), is(1));
         assertThat(offendingLines, contains(is(12)));
