@@ -69,6 +69,12 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
     protected void visitIntegerConstant(int value) {
     }
 
+    /**
+     * Handle a generic kind of invocation. This visitor method is kind of a wildcard to handle less specific invocation
+     * cases.
+     *
+     * @param invokeExpr the invocation expression to visit.
+     */
     protected void visitInvokeExpr(InvokeExpr invokeExpr) {
     }
 

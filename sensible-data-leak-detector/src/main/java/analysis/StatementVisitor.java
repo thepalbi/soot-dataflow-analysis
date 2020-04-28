@@ -6,6 +6,7 @@ import analysis.abstraction.SensibilityLattice;
 import dataflow.utils.ValueVisitor;
 import heros.solver.Pair;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import soot.*;
 import soot.jimple.*;
 import wtf.thepalbi.HeapObject;
@@ -34,8 +35,17 @@ public class StatementVisitor {
             new InterfaceInvokeFunc());
 
     private final Logger LOGGER = getLogger(StatementVisitor.class);
+
+    /**
+     * Mapping from local variables to their sensibility level.
+     */
     private Map<String, SensibilityLattice> localsSensibility;
+
+    /**
+     * Parameters of the method of which this statement belongs.
+     */
     private Map<Integer, SensibilityLattice> params;
+
     private SootClass mainClass;
     private SootMethod inMethod;
     private PointsToResult pointsTo;
@@ -52,9 +62,10 @@ public class StatementVisitor {
     }
 
     public StatementVisitor visit(Stmt statement) {
-        if (statement instanceof DefinitionStmt) {
-            DefinitionStmt definition = (DefinitionStmt) statement;
-            visitDefinition(definition.getLeftOp(), definition.getRightOp());
+        if (statement instanceof AssignStmt) {
+            // Just handle AssignmentStmt. Identity type statements do not influence in this analysis
+            AssignStmt assignStmt = (AssignStmt) statement;
+            visitAssignment(assignStmt.getLeftOp(), assignStmt.getRightOp());
         } else if (statement instanceof InvokeStmt) {
             InvokeStmt invoke = (InvokeStmt) statement;
             visitInvoke(invoke, invoke.getInvokeExpr().getMethod(), invoke.getInvokeExpr().getArgs());
@@ -78,10 +89,23 @@ public class StatementVisitor {
                 .ifPresent(function -> function.accept(invoke, method, arguments));
     }
 
-    private void visitDefinition(Value assignee, Value value) {
-        SensibilityLattice resolvedLevel =
-                new ContainsSensibleVariableVisitor(localsSensibility, params, mainClass, pointsTo).visit(value).done() ? HIGH : NOT_SENSIBLE;
-        localsSensibility.put(new AssigneeNameExtractor().visit(assignee).done(), resolvedLevel);
+    private void visitAssignment(Value assignee, Value value) {
+        // TODO: Handle field assignment
+        if (assignee instanceof Local) {
+            // Visiting the right operand of the assignment can have three outcomes:
+            // - The right operand resolves to a value that is sensible, hence the assignee becomes sensible
+            // - The right operand consists of an invocation, which does not return a sensible value, but as side effects
+            // it leaks a sensible value. // TODO: Check if this is supported
+            // - The right operand resolves to a non-sensible value. Update locals sensibility value.
+
+            // The `.done()` returns whether or not the resolved value is sensible. It does not indicate side effects
+            SensibilityLattice resolvedLevel =
+                    new ContainsSensibleVariableVisitor(localsSensibility, params, mainClass, pointsTo).visit(value).done() ? HIGH : NOT_SENSIBLE;
+            localsSensibility.put(new AssigneeNameExtractor().visit(assignee).done(), resolvedLevel);
+        } else {
+            // Ignore, this would just affect if the right operand of the assignment is a method call, and it has side effects
+            LOGGER.warn("Assignment to something other than locals is not handled: Assignee is of type {}", assignee.getClass().getName());
+        }
     }
 
     public static boolean someValueApplies(List<Value> values, ValueVisitor<Boolean> booleanValueVisitor) {

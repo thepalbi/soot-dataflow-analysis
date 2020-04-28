@@ -28,7 +28,15 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
     private final Logger LOGGER = getLogger(SensibleDataAnalysis.class);
     private final SootClass mainClass;
+
+    /**
+     * Parameters of the method whose body this analysis is running on.
+     */
     private final Map<Integer, SensibilityLattice> methodParams;
+
+    /**
+     * Results of the points to analysis run with this method as first reachable one.
+     */
     private final PointsToResult pointsTo;
     private final SootMethod method;
 
@@ -61,11 +69,13 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         this.mainClass = graph.getBody().getMethod().getDeclaringClass();
         this.method = graph.getBody().getMethod();
 
+        // Analysis just handling locals in method
         // As starting point, save all locals as bottom
         for (Local variable : graph.getBody().getLocals()) {
             this.startingLocalsMap.put(variable.getName(), SensibilityLattice.getBottom());
         }
 
+        // NOTE: Is this necessary?
         if (pointsTo == null) {
             Iterable<Body> targetBodies = Scene.v().getClasses().stream()
                     .filter(sootClass -> sootClass.getPackageName().startsWith(mainClass.getPackageName()))
