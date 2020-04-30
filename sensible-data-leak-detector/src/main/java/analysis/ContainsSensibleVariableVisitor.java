@@ -2,21 +2,24 @@ package analysis;
 
 import analysis.abstraction.SensibilityLattice;
 import dataflow.utils.AbstractValueVisitor;
-import soot.Local;
-import soot.SootClass;
+import org.slf4j.Logger;
+import soot.*;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InterfaceInvokeExpr;
 import soot.jimple.InvokeExpr;
 import soot.jimple.ParameterRef;
+import wtf.thepalbi.HeapObject;
 import wtf.thepalbi.PointsToResult;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static analysis.StatementVisitor.getArgumentSensibilityFor;
-import static analysis.StatementVisitor.someValueApplies;
 import static analysis.abstraction.SensibilityLattice.BOTTOM;
 import static analysis.abstraction.SensibilityLattice.isSensible;
+import static java.util.stream.Collectors.toList;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * {@link dataflow.utils.ValueVisitor} that checks whether a {@link soot.Value} is sensible accordin to the method
@@ -24,23 +27,25 @@ import static analysis.abstraction.SensibilityLattice.isSensible;
  */
 public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolean> {
 
+    private final Logger LOGGER = getLogger(ContainsSensibleVariableVisitor.class);
     private final Map<String, SensibilityLattice> localSensibilityLevel;
+    private final SootMethod inMethod;
     private Map<Integer, SensibilityLattice> parametersSensibility;
     private Boolean isSensible;
     private SootClass mainClass;
     private PointsToResult pointsTo;
 
-    public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel, SootClass mainClass, PointsToResult pointsTo) {
-        this(localsSensibilityLevel, new HashMap<>(), mainClass, pointsTo);
+    public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel, SootMethod inMethod, PointsToResult pointsTo) {
+        this(localsSensibilityLevel, new HashMap<>(), inMethod, pointsTo);
     }
 
     public ContainsSensibleVariableVisitor(Map<String, SensibilityLattice> localsSensibilityLevel,
                                            Map<Integer, SensibilityLattice> parametersSensibility,
-                                           SootClass mainClass,
+                                           SootMethod inMethod,
                                            PointsToResult pointsTo) {
         this.localSensibilityLevel = localsSensibilityLevel;
         this.parametersSensibility = parametersSensibility;
-        this.mainClass = mainClass;
+        this.inMethod = inMethod;
         this.pointsTo = pointsTo;
         this.isSensible = false;
     }
@@ -52,7 +57,7 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
 
     @Override
     public ContainsSensibleVariableVisitor cloneVisitor() {
-        return new ContainsSensibleVariableVisitor(localSensibilityLevel, parametersSensibility, mainClass, pointsTo);
+        return new ContainsSensibleVariableVisitor(localSensibilityLevel, parametersSensibility, inMethod, pointsTo);
     }
 
     @Override
@@ -64,33 +69,56 @@ public class ContainsSensibleVariableVisitor extends AbstractValueVisitor<Boolea
     protected void visitInstanceInvokeExp(InstanceInvokeExpr instanceInvokeExpr) {
         if (instanceInvokeExpr instanceof InterfaceInvokeExpr) {
             // Interface invoke. Use points to to resolve.
+            // Assuming that the base will be a local
+            Local base = (Local) instanceInvokeExpr.getBase();
+            List<HeapObject> basePointsTo = pointsTo.localPointsTo(inMethod, base.getName());
+            // Failed if nothing is resolved in points to set
+            if (basePointsTo.isEmpty()) {
+                throw new RuntimeException("Cannot resolve points to set in call: " + instanceInvokeExpr.toString());
+            }
+            List<SootMethod> resolvedMethods = basePointsTo.stream()
+                    .map(heapObject -> Scene.v().getSootClass(heapObject.getType()).getMethod(instanceInvokeExpr.getMethodRef().getSubSignature()))
+                    .collect(toList());
 
+            // Go through every resolved method from the points-to set from the invocation base
+            // Run the Sensibility analysis and merge back the result into this visitor
+            for (SootMethod resolvedMethod : resolvedMethods) {
+                if (!resolvedMethod.hasActiveBody()) {
+                    LOGGER.warn("Ignoring interface call to {}, on invocation {}. NO ACTIVE BODY",
+                            resolvedMethod.getSignature(),
+                            instanceInvokeExpr.toString());
+                    continue;
+                }
+
+                // TODO: Check for side effects (if the called method leaks a sensible value)
+                // If any of the resolved methods calls gives back a sensible value, mark this to be may-sound.
+                isSensible |= analyzeCalledMethod(resolvedMethod, instanceInvokeExpr.getArgs());
+            }
         } else {
-            // The method is not an interface method. Can be resolved from class.
-
-        }
-        // TODO: Maybe change to maybe sensible in this cases
-        // Maybe instance whose method is being invoked is sensible
-        // Split here into which kind of instance invocation this is
-        isSensible = this.cloneVisitor().visit(instanceInvokeExpr.getBase()).done();
-        if (!isSensible) {
-            // Or maybe some of its arguments are sensible
-            visitInvokeExpr(instanceInvokeExpr);
+            handleResolvedInvocation(instanceInvokeExpr);
         }
     }
 
-    @Override
-    protected void visitInvokeExpr(InvokeExpr invokeExpr) {
-        // Redo this to handle any method as long as Soot has its body. If not log and decide what to do.
-        if (invokeExpr.getMethod().getDeclaringClass().equals(mainClass)) {
-            // Method defined in same package as main class
-            isSensible = SensibleDataAnalysis.forBodyAndParams(invokeExpr.getMethod().getActiveBody(),
-                    getArgumentSensibilityFor(localSensibilityLevel, invokeExpr.getArgs()), pointsTo)
-                    .isReturningSensibleValue();
-        } else {
-            // This is shit
-            isSensible = someValueApplies(invokeExpr.getArgs(), this.cloneVisitor());
+    private void handleResolvedInvocation(InvokeExpr invokeExpr) {
+        if (!invokeExpr.getMethod().hasActiveBody()) {
+            LOGGER.warn("Ignoring interface call to {}, on invocation {}. NO ACTIVE BODY",
+                    invokeExpr.getMethod().getSignature(),
+                    invokeExpr.toString());
+            return;
         }
+        // TODO: Check for side effects (if the called method leaks a sensible value)
+        isSensible = analyzeCalledMethod(invokeExpr.getMethod(), invokeExpr.getArgs());
+    }
+
+    @Override
+    protected void visitStaticInvokeExpr(InvokeExpr staticInvokeExpr) {
+        handleResolvedInvocation(staticInvokeExpr);
+    }
+
+    private boolean analyzeCalledMethod(SootMethod calledMethod, List<Value> arguments) {
+        return SensibleDataAnalysis.forBodyAndParams(calledMethod.getActiveBody(),
+                getArgumentSensibilityFor(localSensibilityLevel, arguments), pointsTo)
+                .isReturningSensibleValue();
     }
 
     @Override

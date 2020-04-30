@@ -22,8 +22,8 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
             visitLocal((Local) value);
         } else if (value instanceof InstanceInvokeExpr) {
             visitInstanceInvokeExp((InstanceInvokeExpr) value);
-        } else if (value instanceof InvokeExpr) {
-            visitInvokeExpr((InvokeExpr) value);
+        } else if (value instanceof StaticInvokeExpr) {
+            visitStaticInvokeExpr((InvokeExpr) value);
         } else if (value instanceof ParameterRef) {
             visitParameterRef((ParameterRef) value);
         } else if (value instanceof ArrayRef) {
@@ -69,16 +69,10 @@ public abstract class AbstractValueVisitor<T> implements ValueVisitor<T> {
     protected void visitIntegerConstant(int value) {
     }
 
-    /**
-     * Handle a generic kind of invocation. This visitor method is kind of a wildcard to handle less specific invocation
-     * cases.
-     *
-     * @param invokeExpr the invocation expression to visit.
-     */
-    protected void visitInvokeExpr(InvokeExpr invokeExpr) {
+    protected void visitInstanceInvokeExp(InstanceInvokeExpr instanceInvokeExpr) {
     }
 
-    protected void visitInstanceInvokeExp(InstanceInvokeExpr instanceInvokeExpr) {
+    protected void visitStaticInvokeExpr(InvokeExpr value) {
     }
 
     protected void visitParameterRef(ParameterRef parameter) {
