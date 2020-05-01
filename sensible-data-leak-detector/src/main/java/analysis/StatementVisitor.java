@@ -1,6 +1,7 @@
 package analysis;
 
 
+import analysis.InvocationVisitor.InvocationResult;
 import analysis.abstraction.SensibilityLattice;
 import org.slf4j.Logger;
 import soot.Local;
@@ -87,7 +88,6 @@ public class StatementVisitor {
             // Check if there's a leak in the current invocation
             doesStatementLeak = true;
         } else {
-            new InvocationVisitor(ctx, invokeExpr).visit();
             // Visit regular invoke
             visitRegularInvoke(invoke, invokeExpr);
         }
@@ -103,11 +103,7 @@ public class StatementVisitor {
      * @param invokeExpr the invoke expression
      */
     private void visitRegularInvoke(InvokeStmt invoke, InvokeExpr invokeExpr) {
-        if (invokeExpr instanceof InterfaceInvokeExpr) {
-            // Handle interface invoke
-        } else {
-            // Handle defined invoke
-        }
+        doesStatementLeak |= new InvocationVisitor(ctx, invokeExpr).visit().leakInCall;
     }
 
     private void visitAssignment(AssignStmt assignStmt) {
@@ -127,7 +123,13 @@ public class StatementVisitor {
 
         if (rightOp instanceof InvokeExpr) {
             // This is an assignment from an expression returned value
-
+            InvocationResult result = new InvocationVisitor(ctx, (InvokeExpr) rightOp).visit();
+            if (result.returnsSensibleValue) {
+                ctx.localsSensibility.put(
+                        AssigneeNameExtractor.from(assignStmt.getLeftOp()),
+                        HIGH
+                );
+            }
         } else {
             // The rightOp might me a field, or some operation over useBoxes
             // Leverage this in a naive way
@@ -147,7 +149,6 @@ public class StatementVisitor {
     private boolean methodIdentifiedBy(SootMethodRef method, String fqClassName, String methodName) {
         return method.getDeclaringClass().getName().equals(fqClassName)
                 && method.getName().equals(methodName);
-
     }
 
     public static Map<Integer, SensibilityLattice> getArgumentSensibilityFor(Map<String, SensibilityLattice> locals,

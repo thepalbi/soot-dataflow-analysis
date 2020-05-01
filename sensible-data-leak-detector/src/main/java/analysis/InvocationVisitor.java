@@ -1,5 +1,6 @@
 package analysis;
 
+import analysis.abstraction.SensibilityLattice;
 import org.slf4j.Logger;
 import soot.Local;
 import soot.Scene;
@@ -8,7 +9,6 @@ import soot.Value;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InterfaceInvokeExpr;
 import soot.jimple.InvokeExpr;
-import soot.jimple.StaticInvokeExpr;
 import wtf.thepalbi.HeapObject;
 
 import java.util.List;
@@ -52,17 +52,19 @@ public class InvocationVisitor {
             // Go through every resolved method from the points-to set from the invocation base
             // Run the Sensibility analysis and merge back the result into this visitor
             for (SootMethod resolvedMethod : resolvedMethods) {
+                InvocationResult result;
                 if (!resolvedMethod.hasActiveBody()) {
                     LOGGER.warn("Ignoring interface call to {}, on invocation {}. NO ACTIVE BODY",
                             resolvedMethod.getSignature(),
                             instanceInvokeExpr.toString());
-                    continue;
+                    result = handleNoMethodBodyCall();
+                } else {
+                    result = analyzeCalledMethod(resolvedMethod, instanceInvokeExpr.getArgs());
                 }
 
-                InvocationResult invocationResult = analyzeCalledMethod(resolvedMethod, instanceInvokeExpr.getArgs());
                 // If any of the resolved methods calls gives back a sensible value, mark this to be may-sound.
-                someMethodReturnsSensibleValue |= invocationResult.returnsSensibleValue;
-                someMethodCallLeaks |= invocationResult.leakInCall;
+                someMethodReturnsSensibleValue |= result.returnsSensibleValue;
+                someMethodCallLeaks |= result.leakInCall;
             }
             return new InvocationResult(someMethodCallLeaks, someMethodReturnsSensibleValue);
         } else {
@@ -81,14 +83,35 @@ public class InvocationVisitor {
 
     private InvocationResult handleResolvedInvocation() {
         if (!invokeExpr.getMethod().hasActiveBody()) {
-            LOGGER.warn("Ignoring interface call to {}, on invocation {}. NO ACTIVE BODY",
+            LOGGER.warn("Ignoring non-interface call to {}, on invocation {}. NO ACTIVE BODY",
                     invokeExpr.getMethod().getSignature(),
                     invokeExpr.toString());
-            return new InvocationResult(false, false);
+            return handleNoMethodBodyCall();
         }
         return analyzeCalledMethod(invokeExpr.getMethod(), invokeExpr.getArgs());
     }
 
+    private InvocationResult handleNoMethodBodyCall() {
+        // By default, assume that most non method body calls with one sensible parameter
+        // will correspond to something like String.concat / StringBuilder.append.
+        // Assume result sensible
+
+        boolean hasSensibleParameter = invokeExpr.getArgs().stream()
+                .filter(value -> value instanceof Local)
+                .map(parameter -> ctx.localsSensibility.get(((Local) parameter).getName()))
+                .map(SensibilityLattice::isSensible)
+                .anyMatch(v -> v);
+
+        boolean receiverIsSensible = false;
+        // Also, if the receiver is a sensible value, consider the returned value will also be
+        if (invokeExpr instanceof InstanceInvokeExpr && ((InstanceInvokeExpr) invokeExpr).getBase() instanceof Local) {
+            Local base = (Local) ((InstanceInvokeExpr) invokeExpr).getBase();
+            receiverIsSensible = SensibilityLattice.isSensible(ctx.localsSensibility.get(base.getName()));
+        }
+
+        // Check both conditions above
+        return new InvocationResult(false, hasSensibleParameter || receiverIsSensible);
+    }
 
     public static class InvocationResult {
         public final boolean leakInCall;

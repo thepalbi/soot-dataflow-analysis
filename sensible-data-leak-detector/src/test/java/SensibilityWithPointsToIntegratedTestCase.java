@@ -39,8 +39,8 @@ public class SensibilityWithPointsToIntegratedTestCase {
     @Test
     public void simpleOneMethodProgramWithSensiblePrintLn() throws Exception {
         runPointsToAndSootForClass("wtf.thepalbi.TestMain");
-        assertThat(offendingLines.size(), is(2));
-        assertThat(offendingLines, contains(is(11), is(13)));
+        assertThat(offendingLines.size(), is(1));
+        assertThat(offendingLines, contains(is(11)));
     }
 
     @Test
