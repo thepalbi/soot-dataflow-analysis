@@ -12,8 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static analysis.abstraction.SensibilityLattice.BOTTOM;
-import static analysis.abstraction.SensibilityLattice.supremeBetween;
+import static analysis.abstraction.SensibilityLattice.*;
 import static org.slf4j.LoggerFactory.getLogger;
 
 // TODO: Maybe it would be nice for the analysis to keep in the dataflow a trace from where each sensible data was originated.
@@ -118,7 +117,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
     @Override
     protected Map<String, SensibilityLattice> newInitialFlow() {
-        Map<String, SensibilityLattice> newMap = new HashMap<>();
+        Map<String, SensibilityLattice> newMap = new DefaultHashMap<>(getBottom());
         newMap.putAll(startingLocalsMap);
         return newMap;
     }
@@ -166,6 +165,20 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
             this.inClass = inClass;
             this.inMethod = inMethod;
             this.pointsToData = pointsToData;
+        }
+    }
+
+    public static class DefaultHashMap<K, V> extends HashMap<K, V> {
+
+        private V defaultGetValue;
+
+        public DefaultHashMap(V defaultGetValue) {
+            this.defaultGetValue = defaultGetValue;
+        }
+
+        @Override
+        public V get(Object key) {
+            return getOrDefault(key, defaultGetValue);
         }
     }
 }
