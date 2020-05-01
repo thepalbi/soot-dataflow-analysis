@@ -1,14 +1,12 @@
 package analysis;
 
 
-import analysis.abstraction.InvokeFunction;
 import analysis.abstraction.SensibilityLattice;
 import dataflow.utils.ValueVisitor;
 import heros.solver.Pair;
 import org.slf4j.Logger;
 import soot.*;
 import soot.jimple.*;
-import wtf.thepalbi.HeapObject;
 import wtf.thepalbi.PointsToResult;
 
 import java.util.List;
@@ -88,9 +86,8 @@ public class StatementVisitor {
         } else if (methodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "sanitize")) {
             assert arguments.size() == 1;
             localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), NOT_SENSIBLE);
-        } else if (false) {
-            // TODO: Check methods that may leak its arguments here (eg. println, etc.).
-            // Notice that some of them might be static method calls.
+        } else if (DoesMethodLeak.check(invokeExpr, localsSensibility)) {
+            doesStatementLeak = true;
         } else {
             visitRegularInvoke(invoke, invokeExpr);
         }
@@ -161,75 +158,21 @@ public class StatementVisitor {
         return returningSensibleValue;
     }
 
-    public Boolean getDoesStatementLeak() {
+    public Boolean doesStatementLeak() {
         return doesStatementLeak;
     }
 
-    private class LocalInvokeFunc implements InvokeFunction {
-
-        @Override
-        public boolean applies(InvokeStmt invocation, SootMethod method) {
-            return method.getDeclaringClass().equals(mainClass);
-        }
-
-        @Override
-        public void accept(InvokeStmt invocation, SootMethod method, List<Value> arguments) {
-            // Maybe this method leaks some sensible variable. Run analysis on method
-            // Collect params sensibility
-            Map<Integer, SensibilityLattice> paramsSensibility = getArgumentSensibilityFor(localsSensibility, arguments);
-            SensibleDataAnalysis calledMethodAnalysis =
-                    SensibleDataAnalysis.forBodyAndParams(method.getActiveBody(), paramsSensibility, pointsTo);
-            if (!calledMethodAnalysis.noLeaksDetected()) {
-                doesStatementLeak = true;
+    private static class DoesMethodLeak {
+        // TODO: Check methods that may leak its arguments here (eg. println, etc.).
+        // Notice that some of them might be static method calls.
+        public static boolean check(InvokeExpr invokeExpr, Map<String, SensibilityLattice> sensibilityValues) {
+            if (invokeExpr.getMethod().getDeclaringClass().getName().equals("java.io.PrintStream") &&
+                    invokeExpr.getMethod().getName().equals("println") &&
+                    SensibilityLattice.isSensible(sensibilityValues.get(AssigneeNameExtractor.from(invokeExpr.getArg(0))))) {
+                return true;
             }
-
-        }
-    }
-
-    private class OffenderInvokeFun implements InvokeFunction {
-
-        public OffenderInvokeFun() {
-        }
-
-        @Override
-        public boolean applies(InvokeStmt invocation, SootMethod method) {
-            return new OffendingMethodPredicate().test(method);
-        }
-
-        @Override
-        public void accept(InvokeStmt invocation, SootMethod method, List<Value> arguments) {
-            // This method is offending, if it has a sensible variable, WARN
-            LOGGER.debug("Just found offending method call");
-            doesStatementLeak = someValueApplies(arguments, new ContainsSensibleVariableVisitor(localsSensibility, inMethod, pointsTo));
-        }
-    }
-
-    private class InterfaceInvokeFunc implements InvokeFunction {
-
-        @Override
-        public boolean applies(InvokeStmt invocation, SootMethod method) {
-            return invocation.getInvokeExpr() instanceof InterfaceInvokeExpr;
-        }
-
-        @Override
-        public void accept(InvokeStmt invocation, SootMethod method, List<Value> arguments) {
-            InterfaceInvokeExpr invokeExpr = (InterfaceInvokeExpr) invocation.getInvokeExpr();
-            // Maybe this method leaks some sensible variable. Run analysis on method
-            // Collect params sensibility
-            Map<Integer, SensibilityLattice> paramsSensibility = getArgumentSensibilityFor(localsSensibility, arguments);
-
-            // Resolve method body with points-to information
-            List<HeapObject> heapObjects = pointsTo.localPointsTo(inMethod, ((Local) invokeExpr.getBase()).getName());
-            String firstPointedObjectType = heapObjects.get(0).getType();
-            SootMethod resolvedMethod = Scene.v().getSootClass(firstPointedObjectType).getMethod(method.getSubSignature());
-
-            assert resolvedMethod.hasActiveBody();
-
-            SensibleDataAnalysis calledMethodAnalysis =
-                    SensibleDataAnalysis.forBodyAndParams(resolvedMethod.getActiveBody(), paramsSensibility, pointsTo);
-            if (!calledMethodAnalysis.noLeaksDetected()) {
-                doesStatementLeak = true;
-            }
+            return false;
         }
     }
 }
+

@@ -102,7 +102,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
         StatementVisitor visitor = new StatementVisitor(in, methodParams, mainClass, method, pointsTo).visit((Stmt) unit);
 
-        possibleLeakInUnit.put(unit, visitor.getDoesStatementLeak());
+        possibleLeakInUnit.put(unit, visitor.doesStatementLeak());
         // Since a return statement is last in the CFG, it's not needed to prevent overwrites
         returningSensibleValue = visitor.getReturningSensibleValue();
 
