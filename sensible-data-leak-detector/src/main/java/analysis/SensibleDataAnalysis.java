@@ -30,11 +30,6 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
     private final SootClass mainClass;
 
     /**
-     * Parameters of the method whose body this analysis is running on.
-     */
-    private final Map<Integer, SensibilityLattice> methodParams;
-
-    /**
      * Results of the points to analysis run with this method as first reachable one.
      */
     private final PointsToResult pointsTo;
@@ -66,14 +61,20 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         this.startingLocalsMap = new HashMap<>();
         this.possibleLeakInUnit = new HashMap<>();
         // TODO: Merge params in localSensibility by using IdentityStatements
-        this.methodParams = methodParams;
-        this.mainClass = graph.getBody().getMethod().getDeclaringClass();
-        this.method = graph.getBody().getMethod();
+        Body methodBody = graph.getBody();
+        this.mainClass = methodBody.getMethod().getDeclaringClass();
+        this.method = methodBody.getMethod();
 
         // Analysis just handling locals in method
         // As starting point, save all locals as bottom
-        for (Local variable : graph.getBody().getLocals()) {
+        for (Local variable : methodBody.getLocals()) {
             this.startingLocalsMap.put(variable.getName(), SensibilityLattice.getBottom());
+        }
+
+        // Modify locals value method params bindings (IdentityStmts), as per methodParams says
+        for (int i = 0; i < method.getParameterCount(); i++) {
+            Local toLocal = methodBody.getParameterLocal(i);
+            this.startingLocalsMap.put(toLocal.getName(), methodParams.get(i));
         }
 
         // NOTE: Is this necessary?
@@ -86,7 +87,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
                     .map(method -> method.getActiveBody())
                     .collect(Collectors.toList());
             try {
-                pointsTo = new wtf.thepalbi.PointToAnalysis().run(targetBodies, graph.getBody(), Scene.v());
+                pointsTo = new wtf.thepalbi.PointToAnalysis().run(targetBodies, methodBody, Scene.v());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -101,7 +102,8 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
     protected void flowThrough(Map<String, SensibilityLattice> in, Unit unit,
                                Map<String, SensibilityLattice> out) {
 
-        StatementVisitor visitor = new StatementVisitor(in, methodParams, method, pointsTo).visit((Stmt) unit);
+        Context ctx = new Context(in, mainClass, method, pointsTo);
+        StatementVisitor visitor = new StatementVisitor(ctx, (Stmt) unit).visit();
 
         possibleLeakInUnit.put(unit, visitor.doesStatementLeak());
         // Since a return statement is last in the CFG, it's not needed to prevent overwrites
@@ -151,5 +153,25 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
     public boolean isReturningSensibleValue() {
         return returningSensibleValue;
+    }
+
+    public static class Context {
+        public final Map<String, SensibilityLattice> localsSensibility;
+        public final SootClass inClass;
+        public final SootMethod inMethod;
+        public final PointsToResult pointsToData;
+
+        public Context(
+                Map<String, SensibilityLattice> localsSensibility,
+                SootClass inClass,
+                SootMethod inMethod,
+                PointsToResult pointsToData
+        ) {
+
+            this.localsSensibility = localsSensibility;
+            this.inClass = inClass;
+            this.inMethod = inMethod;
+            this.pointsToData = pointsToData;
+        }
     }
 }

@@ -2,12 +2,13 @@ package analysis;
 
 
 import analysis.abstraction.SensibilityLattice;
-import dataflow.utils.ValueVisitor;
 import heros.solver.Pair;
 import org.slf4j.Logger;
-import soot.*;
+import soot.Local;
+import soot.SootMethodRef;
+import soot.Value;
+import soot.ValueBox;
 import soot.jimple.*;
-import wtf.thepalbi.PointsToResult;
 
 import java.util.List;
 import java.util.Map;
@@ -23,35 +24,18 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class StatementVisitor {
 
     private final Logger LOGGER = getLogger(StatementVisitor.class);
+    private final SensibleDataAnalysis.Context ctx;
 
-    /**
-     * Mapping from local variables to their sensibility level.
-     */
-    private Map<String, SensibilityLattice> localsSensibility;
-
-    /**
-     * Parameters of the method of which this statement belongs.
-     */
-    private Map<Integer, SensibilityLattice> params;
-
-    private SootMethod inMethod;
-    private PointsToResult pointsTo;
     private Boolean returningSensibleValue = false;
     private Boolean doesStatementLeak = false;
     private Stmt statement;
 
-    public StatementVisitor(Map<String, SensibilityLattice> localsSensibility, Map<Integer, SensibilityLattice> params,
-                            SootMethod method, PointsToResult pointsTo) {
-        // TODO: Wrap all other visitor settings in a context object, since it's passed around
-        this.localsSensibility = localsSensibility;
-        this.params = params;
-        this.inMethod = method;
-        this.pointsTo = pointsTo;
+    public StatementVisitor(SensibleDataAnalysis.Context ctx, Stmt stmt) {
+        this.ctx = ctx;
+        this.statement = stmt;
     }
 
-    public StatementVisitor visit(Stmt statement) {
-        // TODO: Move statement to visitor constructor, since it's a method Object
-        this.statement = statement;
+    public StatementVisitor visit() {
         if (statement instanceof AssignStmt) {
             // Just handle AssignmentStmt. Identity type statements do not influence in this analysis
             AssignStmt assignStmt = (AssignStmt) statement;
@@ -80,7 +64,7 @@ public class StatementVisitor {
     }
 
     private boolean isLocalSensible(Local local) {
-        return SensibilityLattice.isSensible(localsSensibility.get(AssigneeNameExtractor.from(local)));
+        return SensibilityLattice.isSensible(ctx.localsSensibility.get(AssigneeNameExtractor.from(local)));
     }
 
     /**
@@ -95,11 +79,11 @@ public class StatementVisitor {
         List<Value> arguments = invokeExpr.getArgs();
         if (methodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "markAsSensible")) {
             assert arguments.size() == 1;
-            localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), HIGH);
+            ctx.localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), HIGH);
         } else if (methodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "sanitize")) {
             assert arguments.size() == 1;
-            localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), NOT_SENSIBLE);
-        } else if (DoesMethodLeak.check(invokeExpr, localsSensibility)) {
+            ctx.localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), NOT_SENSIBLE);
+        } else if (DoesMethodLeak.check(invokeExpr, ctx.localsSensibility)) {
             doesStatementLeak = true;
         } else {
             visitRegularInvoke(invoke, invokeExpr);
@@ -148,7 +132,7 @@ public class StatementVisitor {
                 Value rightUseValue = valueBox.getValue();
                 if (rightUseValue instanceof Local && isLocalSensible((Local) rightUseValue)) {
                     // If some of the use boxes in the right expression is sensible, make result sensible to be MAY (in a coarse way)
-                    localsSensibility.put(
+                    ctx.localsSensibility.put(
                             AssigneeNameExtractor.from(assignStmt.getLeftOp()),
                             HIGH);
                     break;
