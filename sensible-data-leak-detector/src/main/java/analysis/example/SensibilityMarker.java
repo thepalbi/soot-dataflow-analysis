@@ -1,4 +1,4 @@
-package analysis;
+package analysis.example;
 
 /**
  * Common methods used for marking a variable as <b>sensible</b>, or <b>sanitizing</b> it.
