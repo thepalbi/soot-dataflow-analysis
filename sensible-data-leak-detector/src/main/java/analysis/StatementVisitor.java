@@ -55,21 +55,32 @@ public class StatementVisitor {
         if (statement instanceof AssignStmt) {
             // Just handle AssignmentStmt. Identity type statements do not influence in this analysis
             AssignStmt assignStmt = (AssignStmt) statement;
-            visitAssignment(assignStmt.getLeftOp(), assignStmt.getRightOp());
+            visitAssignment(assignStmt);
         } else if (statement instanceof InvokeStmt) {
             InvokeStmt invoke = (InvokeStmt) statement;
             visitInvoke(invoke, invoke.getInvokeExpr());
         } else if (statement instanceof ReturnStmt) {
-            ReturnStmt returnStmt = (ReturnStmt) statement;
-            visitReturn(returnStmt.getOp());
+            visitReturn();
         } else {
             LOGGER.debug("Ignoring statement with text: '{}' and class '{}'", statement.toString(), statement.getClass().getName());
         }
         return this;
     }
 
-    private void visitReturn(Value value) {
-        returningSensibleValue = new ContainsSensibleVariableVisitor(localsSensibility, inMethod, pointsTo).visit(value).done();
+    private void visitReturn() {
+        // Assuming that the returned value from the statement is always a Local or Field (eg. not a invocation)
+        // Checking useBoxes fro sensible returns
+        for (ValueBox valueBox : statement.getUseBoxes()) {
+            Value someReturnedValue = valueBox.getValue();
+            if (someReturnedValue instanceof Local && isLocalSensible((Local) someReturnedValue)) {
+                returningSensibleValue = true;
+                break;
+            }
+        }
+    }
+
+    private boolean isLocalSensible(Local local) {
+        return SensibilityLattice.isSensible(localsSensibility.get(AssigneeNameExtractor.from(local)));
     }
 
     /**
@@ -112,30 +123,38 @@ public class StatementVisitor {
         }
     }
 
-    private void visitAssignment(Value assignee, Value value) {
-        // TODO: Handle field assignment
-        if (assignee instanceof Local) {
-            // Visiting the right operand of the assignment can have three outcomes:
-            // - The right operand resolves to a value that is sensible, hence the assignee becomes sensible
-            // - The right operand consists of an invocation, which does not return a sensible value, but as side effects
-            // it leaks a sensible value. // TODO: Check if this is supported
-            // - The right operand resolves to a non-sensible value. Update locals sensibility value.
-
-            // The `.done()` returns whether or not the resolved value is sensible. It does not indicate side effects
-            SensibilityLattice resolvedLevel =
-                    new ContainsSensibleVariableVisitor(localsSensibility, params, inMethod, pointsTo).visit(value).done() ? HIGH : NOT_SENSIBLE;
-            localsSensibility.put(new AssigneeNameExtractor().visit(assignee).done(), resolvedLevel);
-        } else {
-            // Ignore, this would just affect if the right operand of the assignment is a method call, and it has side effects
-            LOGGER.warn("Assignment to something other than locals is not handled: Assignee is of type {}", assignee.getClass().getName());
+    private void visitAssignment(AssignStmt assignStmt) {
+        if (assignStmt.getLeftOp() instanceof FieldRef) {
+            // TODO: Handle field assignment
+            LOGGER.warn("Assignment to fields not supported yet: {}", assignStmt);
         }
-    }
 
-    public static boolean someValueApplies(List<Value> values, ValueVisitor<Boolean> booleanValueVisitor) {
-        return values.stream()
-                .map(argument -> booleanValueVisitor.visit(argument).done())
-                .reduce(false, (soFar, currentIsSensible) -> soFar || currentIsSensible);
+        Value rightOp = assignStmt.getRightOp();
 
+        // Visiting the right operand of the assignment can have three outcomes:
+        // - The right operand resolves to a value that is sensible (by directly being one, or an operation between
+        //   some of them), hence the assignee becomes sensible
+        // - The right operand consists of an invocation, which does not return a sensible value, but as side effects
+        //   it leaks a sensible value. // TODO: Check if this is supported
+        // - The right operand resolves to a non-sensible value. Update locals sensibility value.
+
+        if (rightOp instanceof InvokeExpr) {
+            // This is an assignment from an expression returned value
+
+        } else {
+            // The rightOp might me a field, or some operation over useBoxes
+            // Leverage this in a naive way
+            for (ValueBox valueBox : rightOp.getUseBoxes()) {
+                Value rightUseValue = valueBox.getValue();
+                if (rightUseValue instanceof Local && isLocalSensible((Local) rightUseValue)) {
+                    // If some of the use boxes in the right expression is sensible, make result sensible to be MAY (in a coarse way)
+                    localsSensibility.put(
+                            AssigneeNameExtractor.from(assignStmt.getLeftOp()),
+                            HIGH);
+                    break;
+                }
+            }
+        }
     }
 
     private boolean methodIdentifiedBy(SootMethodRef method, String fqClassName, String methodName) {
