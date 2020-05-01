@@ -35,10 +35,13 @@ public class InvocationVisitor {
             // Assuming that the base will be a local
             Local base = (Local) instanceInvokeExpr.getBase();
             List<HeapObject> basePointsTo = ctx.pointsToData.localPointsTo(ctx.inMethod, base.getName());
+
             // Failed if nothing is resolved in points to set
             if (basePointsTo.isEmpty()) {
-                throw new RuntimeException("Cannot resolve points to set in call: " + instanceInvokeExpr.toString());
+                LOGGER.warn("Cannot resolve points to set in call: {}", instanceInvokeExpr.toString());
+                return InvocationResult.noResult();
             }
+
             List<SootMethod> resolvedMethods = basePointsTo.stream()
                     .map(heapObject -> Scene.v().getSootClass(heapObject.getType()).getMethod(instanceInvokeExpr.getMethodRef().getSubSignature()))
                     .collect(toList());
@@ -91,8 +94,11 @@ public class InvocationVisitor {
         public final boolean leakInCall;
         public final boolean returnsSensibleValue;
 
-        public InvocationResult(boolean leakInCall, boolean returnsSensibleValue) {
+        public static InvocationResult noResult() {
+            return new InvocationResult(false, false);
+        }
 
+        public InvocationResult(boolean leakInCall, boolean returnsSensibleValue) {
             this.leakInCall = leakInCall;
             this.returnsSensibleValue = returnsSensibleValue;
         }

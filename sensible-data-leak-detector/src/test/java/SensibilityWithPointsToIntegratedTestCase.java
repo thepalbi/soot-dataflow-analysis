@@ -1,8 +1,7 @@
-package soot;
-
 import analysis.SensibleDataAnalysis;
 import org.junit.After;
 import org.junit.Test;
+import soot.*;
 import soot.options.Options;
 import wtf.thepalbi.PointToAnalysis;
 import wtf.thepalbi.PointsToResult;
@@ -116,11 +115,9 @@ public class SensibilityWithPointsToIntegratedTestCase {
                 .flatMap(sootClass -> sootClass.getMethods().stream())
                 .map(method -> method.getActiveBody())
                 .collect(Collectors.toList());
-        PointsToResult result = new PointToAnalysis().run(
-                targetBodies,
-                // By default, asume a main method in the target class. Expand PointsTo from there out.
-                Scene.v().getSootClass(targetFQClassName).getMethodByName("main").getActiveBody(),
-                Scene.v());
+        PointsToResult result = new PointToAnalysis(Scene.v()).forClassesUnderPackage(
+                "wtf.thepalbi",
+                Scene.v().getSootClass(targetFQClassName).getMethodByName("main").getActiveBody());
         this.pointsTo = result;
 
         // Reset soot

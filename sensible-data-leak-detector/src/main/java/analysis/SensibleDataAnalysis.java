@@ -10,9 +10,9 @@ import wtf.thepalbi.PointsToResult;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import static analysis.abstraction.SensibilityLattice.*;
+import static analysis.abstraction.SensibilityLattice.getBottom;
+import static analysis.abstraction.SensibilityLattice.supremeBetween;
 import static org.slf4j.LoggerFactory.getLogger;
 
 // TODO: Maybe it would be nice for the analysis to keep in the dataflow a trace from where each sensible data was originated.
@@ -72,20 +72,13 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         // Modify locals value method params bindings (IdentityStmts), as per methodParams says
         for (int i = 0; i < method.getParameterCount(); i++) {
             Local toLocal = methodBody.getParameterLocal(i);
-            this.startingLocalsMap.put(toLocal.getName(), methodParams.get(i));
+            this.startingLocalsMap.put(toLocal.getName(), methodParams.get(i) != null ? methodParams.get(i) : getBottom());
         }
 
         // NOTE: Is this necessary?
         if (pointsTo == null) {
-            Iterable<Body> targetBodies = Scene.v().getClasses().stream()
-                    .filter(sootClass -> sootClass.getPackageName().startsWith(mainClass.getPackageName()))
-                    // Filter interface, they do not have method bodies
-                    .filter(sootClass -> !sootClass.isInterface())
-                    .flatMap(sootClass -> sootClass.getMethods().stream())
-                    .map(method -> method.getActiveBody())
-                    .collect(Collectors.toList());
             try {
-                pointsTo = new wtf.thepalbi.PointToAnalysis().run(targetBodies, methodBody, Scene.v());
+                pointsTo = new wtf.thepalbi.PointToAnalysis(Scene.v()).forClassesUnderPackage(mainClass.getPackageName(), methodBody);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -130,8 +123,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         // May analysis
         // On conflicting values, take supreme to make analysis sound
         for (String variable : input2.keySet()) {
-            SensibilityLattice currentValue = out.getOrDefault(variable, BOTTOM);
-            out.put(variable, supremeBetween(input2.get(variable), currentValue));
+            out.put(variable, supremeBetween(input2.get(variable), out.get(variable)));
         }
     }
 

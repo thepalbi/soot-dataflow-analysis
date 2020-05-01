@@ -13,8 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static analysis.abstraction.SensibilityLattice.HIGH;
-import static analysis.abstraction.SensibilityLattice.NOT_SENSIBLE;
+import static analysis.abstraction.SensibilityLattice.*;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -155,7 +154,12 @@ public class StatementVisitor {
                                                                              List<Value> arguments) {
         Map<Integer, SensibilityLattice> parametersMap = new HashMap<>();
         for (int i = 0; i < arguments.size(); i++) {
-            parametersMap.put(i, locals.get(AssigneeNameExtractor.from(arguments.get(i))));
+            Value currentArgument = arguments.get(i);
+            if (currentArgument instanceof Local) {
+                parametersMap.put(i, locals.get(((Local) currentArgument).getName()));
+            } else {
+                parametersMap.put(i, getBottom());
+            }
         }
         return parametersMap;
     }
