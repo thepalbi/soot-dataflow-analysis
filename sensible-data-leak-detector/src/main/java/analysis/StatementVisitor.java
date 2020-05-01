@@ -2,7 +2,6 @@ package analysis;
 
 
 import analysis.abstraction.SensibilityLattice;
-import heros.solver.Pair;
 import org.slf4j.Logger;
 import soot.Local;
 import soot.SootMethodRef;
@@ -10,12 +9,12 @@ import soot.Value;
 import soot.ValueBox;
 import soot.jimple.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
-import static analysis.abstraction.SensibilityLattice.*;
+import static analysis.abstraction.SensibilityLattice.HIGH;
+import static analysis.abstraction.SensibilityLattice.NOT_SENSIBLE;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -78,14 +77,19 @@ public class StatementVisitor {
         SootMethodRef invokedMethod = invokeExpr.getMethodRef();
         List<Value> arguments = invokeExpr.getArgs();
         if (methodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "markAsSensible")) {
+            // Mark value as sensible invocation
             assert arguments.size() == 1;
             ctx.localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), HIGH);
         } else if (methodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "sanitize")) {
+            // Clean value sensibility level
             assert arguments.size() == 1;
             ctx.localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), NOT_SENSIBLE);
         } else if (DoesMethodLeak.check(invokeExpr, ctx.localsSensibility)) {
+            // Check if there's a leak in the current invocation
             doesStatementLeak = true;
         } else {
+            new InvocationVisitor(ctx, invokeExpr).visit();
+            // Visit regular invoke
             visitRegularInvoke(invoke, invokeExpr);
         }
     }
@@ -149,14 +153,11 @@ public class StatementVisitor {
 
     public static Map<Integer, SensibilityLattice> getArgumentSensibilityFor(Map<String, SensibilityLattice> locals,
                                                                              List<Value> arguments) {
-        AtomicInteger index = new AtomicInteger(0);
-        return arguments.stream()
-                .map(value -> new Pair<>(index.getAndIncrement(), value))
-                .filter(paramPair -> paramPair.getO2() instanceof Local)
-                .map(paramPair -> new Pair<>(paramPair.getO1(),
-                        locals.getOrDefault(((Local) paramPair.getO2()).getName(),
-                                BOTTOM)))
-                .collect(Collectors.toMap(pair -> pair.getO1(), pair -> pair.getO2()));
+        Map<Integer, SensibilityLattice> parametersMap = new HashMap<>();
+        for (int i = 0; i < arguments.size(); i++) {
+            parametersMap.put(i, locals.get(AssigneeNameExtractor.from(arguments.get(i))));
+        }
+        return parametersMap;
     }
 
     public Boolean getReturningSensibleValue() {

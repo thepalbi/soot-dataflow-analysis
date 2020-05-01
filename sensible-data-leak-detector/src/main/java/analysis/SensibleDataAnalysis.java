@@ -60,7 +60,6 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
         this.startingLocalsMap = new HashMap<>();
         this.possibleLeakInUnit = new HashMap<>();
-        // TODO: Merge params in localSensibility by using IdentityStatements
         Body methodBody = graph.getBody();
         this.mainClass = methodBody.getMethod().getDeclaringClass();
         this.method = methodBody.getMethod();
@@ -117,14 +116,6 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         return possibleLeakInUnit.getOrDefault(unit, false);
     }
 
-    public boolean noLeaksDetected() {
-        // TODO: Change this. Its horrible
-        return
-                possibleLeakInUnit.isEmpty() ||
-                        !possibleLeakInUnit.values().stream()
-                                .reduce(false, (aBoolean, aBoolean2) -> aBoolean || aBoolean2);
-    }
-
     @Override
     protected Map<String, SensibilityLattice> newInitialFlow() {
         Map<String, SensibilityLattice> newMap = new HashMap<>();
@@ -155,6 +146,9 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         return returningSensibleValue;
     }
 
+    /**
+     * Object containing all the analysis-wide necessary variables.
+     */
     public static class Context {
         public final Map<String, SensibilityLattice> localsSensibility;
         public final SootClass inClass;
