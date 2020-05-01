@@ -78,7 +78,7 @@ public class InvocationVisitor {
 
         // TODO: Check for side effects (if the called method leaks a sensible value)
         // TODO: Check leak in called method
-        return new InvocationResult(false, analysisResult.isReturningSensibleValue());
+        return new InvocationResult(analysisResult.leaksSensibleValue(), analysisResult.isReturningSensibleValue());
     }
 
     private InvocationResult handleResolvedInvocation() {

@@ -137,6 +137,12 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
         return returningSensibleValue;
     }
 
+    public boolean leaksSensibleValue() {
+        return method.getActiveBody().getUnits().stream()
+                .map(unit -> possibleLeakInUnit(unit))
+                .anyMatch(v -> v);
+    }
+
     /**
      * Object containing all the analysis-wide necessary variables.
      */
