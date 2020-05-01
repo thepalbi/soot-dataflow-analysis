@@ -65,6 +65,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
 
         this.startingLocalsMap = new HashMap<>();
         this.possibleLeakInUnit = new HashMap<>();
+        // TODO: Merge params in localSensibility by using IdentityStatements
         this.methodParams = methodParams;
         this.mainClass = graph.getBody().getMethod().getDeclaringClass();
         this.method = graph.getBody().getMethod();
@@ -100,7 +101,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
     protected void flowThrough(Map<String, SensibilityLattice> in, Unit unit,
                                Map<String, SensibilityLattice> out) {
 
-        StatementVisitor visitor = new StatementVisitor(in, methodParams, mainClass, method, pointsTo).visit((Stmt) unit);
+        StatementVisitor visitor = new StatementVisitor(in, methodParams, method, pointsTo).visit((Stmt) unit);
 
         possibleLeakInUnit.put(unit, visitor.doesStatementLeak());
         // Since a return statement is last in the CFG, it's not needed to prevent overwrites
@@ -134,6 +135,7 @@ public class SensibleDataAnalysis extends ForwardFlowAnalysis<Unit, Map<String, 
                          Map<String, SensibilityLattice> out) {
         out.clear();
         out.putAll(input1);
+        // May analysis
         // On conflicting values, take supreme to make analysis sound
         for (String variable : input2.keySet()) {
             SensibilityLattice currentValue = out.getOrDefault(variable, BOTTOM);

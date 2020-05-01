@@ -34,22 +34,24 @@ public class StatementVisitor {
      */
     private Map<Integer, SensibilityLattice> params;
 
-    private SootClass mainClass;
     private SootMethod inMethod;
     private PointsToResult pointsTo;
     private Boolean returningSensibleValue = false;
     private Boolean doesStatementLeak = false;
+    private Stmt statement;
 
     public StatementVisitor(Map<String, SensibilityLattice> localsSensibility, Map<Integer, SensibilityLattice> params,
-                            SootClass mainClass, SootMethod method, PointsToResult pointsTo) {
+                            SootMethod method, PointsToResult pointsTo) {
+        // TODO: Wrap all other visitor settings in a context object, since it's passed around
         this.localsSensibility = localsSensibility;
         this.params = params;
-        this.mainClass = mainClass;
         this.inMethod = method;
         this.pointsTo = pointsTo;
     }
 
     public StatementVisitor visit(Stmt statement) {
+        // TODO: Move statement to visitor constructor, since it's a method Object
+        this.statement = statement;
         if (statement instanceof AssignStmt) {
             // Just handle AssignmentStmt. Identity type statements do not influence in this analysis
             AssignStmt assignStmt = (AssignStmt) statement;
