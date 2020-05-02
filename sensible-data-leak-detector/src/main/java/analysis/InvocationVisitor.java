@@ -2,10 +2,7 @@ package analysis;
 
 import analysis.abstraction.SensibilityLattice;
 import org.slf4j.Logger;
-import soot.Local;
-import soot.Scene;
-import soot.SootMethod;
-import soot.Value;
+import soot.*;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InterfaceInvokeExpr;
 import soot.jimple.InvokeExpr;
@@ -109,8 +106,13 @@ public class InvocationVisitor {
             receiverIsSensible = SensibilityLattice.isSensible(ctx.localsSensibility.get(base.getName()));
         }
 
+        // Check that method is non-void returning
+        boolean methodIsVoid = invokeExpr.getMethodRef().getReturnType() instanceof VoidType;
+
         // Check both conditions above
-        return new InvocationResult(false, hasSensibleParameter || receiverIsSensible);
+        return new InvocationResult(
+                false,
+                !methodIsVoid && (hasSensibleParameter || receiverIsSensible));
     }
 
     public static class InvocationResult {
