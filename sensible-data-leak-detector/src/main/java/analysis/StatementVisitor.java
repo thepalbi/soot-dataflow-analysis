@@ -63,7 +63,7 @@ public class StatementVisitor {
     }
 
     private boolean isLocalSensible(Local local) {
-        return SensibilityLattice.isSensible(ctx.localsSensibility.get(AssigneeNameExtractor.from(local)));
+        return SensibilityLattice.isSensible(ctx.localsSensibility.get(local.getName()));
     }
 
     /**
@@ -79,11 +79,12 @@ public class StatementVisitor {
         if (methodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "markAsSensible")) {
             // Mark value as sensible invocation
             assert arguments.size() == 1;
-            ctx.localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), HIGH);
+            Local argument = (Local) arguments.get(0);
+            ctx.localsSensibility.put(AssigneeNameExtractor.from(arguments.get(0)), HIGH);
         } else if (methodIdentifiedBy(invokedMethod, "analysis.SensibilityMarker", "sanitize")) {
             // Clean value sensibility level
             assert arguments.size() == 1;
-            ctx.localsSensibility.put(new AssigneeNameExtractor().visit(arguments.get(0)).done(), NOT_SENSIBLE);
+            ctx.localsSensibility.put(AssigneeNameExtractor.from(arguments.get(0)), NOT_SENSIBLE);
         } else if (DoesMethodLeak.check(invokeExpr, ctx.localsSensibility)) {
             // Check if there's a leak in the current invocation
             doesStatementLeak = true;

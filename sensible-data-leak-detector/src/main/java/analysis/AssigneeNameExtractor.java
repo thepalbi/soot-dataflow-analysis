@@ -11,11 +11,11 @@ import soot.jimple.ArrayRef;
  */
 public class AssigneeNameExtractor extends AbstractValueVisitor<String> {
 
-    AssigneeNameExtractor() {
+    private AssigneeNameExtractor() {
         this.nameBuilder = new StringBuilder();
     }
 
-    AssigneeNameExtractor(StringBuilder nameBuilder) {
+    private AssigneeNameExtractor(StringBuilder nameBuilder) {
         this.nameBuilder = nameBuilder;
     }
 
