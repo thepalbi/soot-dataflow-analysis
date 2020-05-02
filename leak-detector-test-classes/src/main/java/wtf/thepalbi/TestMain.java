@@ -9,7 +9,5 @@ public class TestMain {
         someSensibleData = someSensibleData + "chauchis";
         SensibilityMarker.markAsSensible(someSensibleData);
         System.out.println(someSensibleData);
-        String someOtherSensibleData = someSensibleData + "perris";
-        System.out.println(someOtherSensibleData);
     }
 }

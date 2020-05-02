@@ -33,6 +33,18 @@ public class SensibilityWithPointsToIntegratedTestCase {
     }
 
     @Test
+    public void findLeakWhenImplementationMarksValueAsSensible() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.TestPointsToWithoutAnalysis2");
+        assertThat(offendingLines, hasSize(1));
+    }
+
+    @Test
+    public void noLeakWhenImplementationJustReturnsObject() throws Exception {
+        runPointsToAndSootForClass("wtf.thepalbi.TestPointsToWithoutAnalysis3");
+        assertThat(offendingLines, empty());
+    }
+
+    @Test
     public void noLeakFoundWithDummyImplementation() throws Exception {
         runPointsToAndSootForClass("wtf.thepalbi.TestPointsToWithoutAnalysisNotLeaking");
         // System.out.println(offendingLines);
