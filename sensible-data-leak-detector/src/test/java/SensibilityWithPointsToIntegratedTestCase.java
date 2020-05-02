@@ -7,6 +7,8 @@ import soot.options.Options;
 import wtf.thepalbi.PointToAnalysis;
 import wtf.thepalbi.PointsToResult;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -155,10 +157,14 @@ public class SensibilityWithPointsToIntegratedTestCase {
 
     private void configureCommonSootOptions() {
         // Set as classpath both test and src classes
-        // TODO: Extract this path as relative
-        Options.v().set_process_dir(Arrays.asList(
-                "/Users/thepalbi/Facultad/aap/soot-dataflow-analysis/leak-detector-test-classes/target/classes"
-        ));
+
+        String testSourcesPath =
+                new File(
+                        getClass().getProtectionDomain().getCodeSource().getLocation().getPath(),
+                        "../../../leak-detector-test-classes/target/classes"
+                ).getPath();
+
+        Options.v().set_process_dir(Arrays.asList(testSourcesPath));
 
         // Use default JVM rt.jar
         Options.v().set_prepend_classpath(true);
