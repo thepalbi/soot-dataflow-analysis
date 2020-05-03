@@ -38,7 +38,7 @@ The analysis has the following features analyzing it in the data-flow framework:
  details.
  
 ### Build instructions
-1. Clone the [repository](https://github.com/thepalbi/soot-dataflow-analysis/tree/points-to-integration).
+1. Clone the [repository](https://github.com/thepalbi/soot-dataflow-analysis/).
 2. Clone the [points-to analysis repo](https://github.com/thepalbi/souffle-points-to-analysis/).
 3. Run ```mvn clean install``` in the points-to analysis repo. This is a **necessary** dependency for the sensible-data-analysis.
 4. Run ```mvn clean install``` in the root of this repo. This will also run the whole test suite.
@@ -84,7 +84,7 @@ Also, non-user called methods are that are not considered offending methods are 
 side effect. This is a very naive approach, but since offending methods are checked way before this simplification
 is reached, this *can be assumed*.
 
-This rules are implemented [here](https://github.com/thepalbi/soot-dataflow-analysis/blob/9a43888469f712b79a99987e8c2c1238b94c44d2/sensible-data-leak-detector/src/main/java/analysis/InvocationVisitor.java#L94).
+This rules are implemented [here](https://github.com/thepalbi/soot-dataflow-analysis/blob/0acadb187ccc6c37dcdd2cc0e25b41115a010436/sensible-data-leak-detector/src/main/java/analysis/InvocationVisitor.java#L91).
 
 #### Polymorphic calls handling
 When an invoked method corresponds to an interface method, some extra information is needed to decide which
@@ -100,7 +100,7 @@ sensitivity of the points-to used, for example). In those cases, every called is
 results are merged making this decision in a MAY-fashion. This might generate false-positive, but helps in keeping
 the overall analysis sound.
 
-This is implemented in [here](https://github.com/thepalbi/soot-dataflow-analysis/blob/9a43888469f712b79a99987e8c2c1238b94c44d2/sensible-data-leak-detector/src/main/java/analysis/InvocationVisitor.java#L32.)
+This is implemented in [here](https://github.com/thepalbi/soot-dataflow-analysis/blob/0acadb187ccc6c37dcdd2cc0e25b41115a010436/sensible-data-leak-detector/src/main/java/analysis/InvocationVisitor.java#L30)
 
 ### Future work
 All over the analysis code there are TODO's statements suggesting future improvements for this project. Overall, they can be summarized with the following:
