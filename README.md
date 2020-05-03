@@ -25,23 +25,11 @@ java -jar sensible-data-leak-detector/target/sensible-data-leak-detector-1.0-SNA
      soot.analyzables.TestMain
 ````
 
-### Division by zero analysis
-Phase name: **jtp.DivisionByZeroAnalysis**
+## Analysis
+- [Division by Zero Analysis](zero-analysis/README.md)
+- [Sensible data leaks analysis](sensible-data-leak-detector/README.md)
 
-Checks if a division by zero is caused in some operation. If positive, logs a warning during the 
-**JTP** (Jimple transformation pack) phase.
-
-
-### Sensibility and Leaks analysis
-Phase name: **jtp.SensibleData**
-
-Evaluates whether a sensible value, marked by the `SensibilityMarker.markAsSensible` method, is leaked by
-some offending method.
-
-The offending methods are read from a config file named `offending-methods.yaml`.
-
-
-### Other modules
+## Other modules
 There are some other modules inside this repository, for example:
 - **Utils**: Contains some cross-analysis classes, like `ValueVisitor<T>`.
 - **Analysis Parent POM**: Maven's parent pom for any analysis. Contains plugins in the build and
