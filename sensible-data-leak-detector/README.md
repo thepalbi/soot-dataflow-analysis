@@ -36,6 +36,13 @@ The analysis has the following features analyzing it in the data-flow framework:
 - Handles just local assignment operations (does not support fields or array references).
 - **Handles polymorphic method invocations**: See [this section](#Inter-procedural-implementation-details) for more
  details.
+ 
+### Build instructions
+1. Clone the [repository](https://github.com/thepalbi/soot-dataflow-analysis/tree/points-to-integration).
+2. Clone the [points-to analysis repo](https://github.com/thepalbi/souffle-points-to-analysis/).
+3. Run ```mvn clean install``` in the points-to analysis repo. This is a **necessary** dependency for the sensible-data-analysis.
+4. Run ```mvn clean install``` in the root of this repo. This will also run the whole test suite.
+5. For details on calling the analysis from Soot, check the [root readme](../README.md).
 
 ### Inter-procedural implementation details
 #### Overview

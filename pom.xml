@@ -77,9 +77,9 @@
     </dependencies>
 
     <modules>
-        <module>zero-analysis</module>
         <module>utils</module>
-        <module>sensible-data-leak-detector</module>
+        <module>zero-analysis</module>
         <module>leak-detector-test-classes</module>
+        <module>sensible-data-leak-detector</module>
     </modules>
 </project>
